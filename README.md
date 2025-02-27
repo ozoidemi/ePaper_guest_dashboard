@@ -9,7 +9,7 @@
 
 ---
 
-## TL;DR;
+## TL;DR.
 ### You'll need:
 - UniFi Network
 - Home Assistant instance running the Unifi Network Integration
@@ -19,15 +19,23 @@
 
 ### Installation
 - [ ] Make sure to properly isolate your guest network through the Unifi Network app.
-- [ ] Declare the Home Assistant template entities on your `configuration.yaml`, and the automation rules on your `automations.yaml`.
+- [ ] Add the automation rules from the *automations.yaml* project file to your HA's `automations.yaml` file.
+- [ ] Declare the template entities from the *configuration.yaml* project file to your HA's `configuration.yaml` file.
 - [ ] Copy the header file to the project folder on your ESPHome Host.
 - [ ] Load up the device yaml on your preferred ESPHome Device Editor and install.
 
 #### Note that:
 You must have `cairosvg` and `libcairo2-dev` packages installed on your ESPHome Host Platform, 
+
 ```
 pip install cairosvg
 apt install libcairo2-dev
+```
+
+Also, using the QR Code integration for decoding requires `zbar-tools` on HAOS.
+
+```
+apk add zbar
 ```
 
 Well, that's it. Stan's dead. Good night.\*
@@ -58,7 +66,7 @@ With that out of the way, let's dive into the details...
 
 ## Is this project right for you?
 
-Feel free skipping to the [implementation details](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#implementation) if you already know how to secure a public wifi network.
+Feel free skipping to the [implementation details](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#Implementing-the-project) if you are comfortable securing a public wifi network.
 
 Otherwise, please read on.
 
@@ -84,7 +92,10 @@ Until then, please know that the downside of implementing this project far outwe
 
 Seriously.
 
-### Anything else you need to know? (1/3)
+### Anything else you need to know?
+
+#### Fact 1 out of 3
+
 Yes. I mentioned it already, but let's hit it one more time for the people in the back:
 
 **DISCLAIMER**
@@ -96,7 +107,7 @@ If you don't understand the risks involved, then do yourself a favor and **avoid
 
 Once we have all the prerequisites in place, we can start working on the actual display.
 
-### Anything else you need to know? (2/3)
+#### Fact 2 out of 3
 
 Note that the Unifi Network Integration team has taken active steps to complicate getting the network password into a sensor. There are very good reasons for this.
 
@@ -106,10 +117,13 @@ That should be understood in two ways:
 1. Enabling a sensor to store the password will require some elbow grease.
 2. Don't mess with this if you don't fully understand what you are doing.
 
-### Anything else you need to know? (3/3)
+#### Fact 3 out of 3
+
 You should **DEFINITELY** know that the guy who developed the base QR code implementation—which was later adopted by the official Unifi Network integration in HA—had this to say about my idea:
 
 > You do you, but I for one will never do any of the things you just suggested. In fact, given what you just wrote, I question the need for you to even have a QR code at all.
+
+[See for yourself](https://community.home-assistant.io/t/updated-automating-unifi-wifi-ssid-password-changes-and-qr-code-generation/380616/75?u=ozoidemi).
 
 *Harsh?* Perhaps.
 
@@ -163,7 +177,7 @@ Then choose all the defaults, except for the container type, which should be pri
 
 Running a UXG-Pro with Unifi Network 9.0.114 on a local CK-Gen2. Also multiple U6+ APs, and multiple USW-24-POE switches.
 
-My guest network isolates all devices from one another in the same VLAN, and from accessing any other VLANs.
+My guest network isolates all devices from one another in the same VLAN, and prevents them from accessing any other VLANs.
 
 Ubiquiti provides some advice around [best practices for guest networks](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi).
 
@@ -312,15 +326,34 @@ The second ensures that the guest network password is updated automatically at l
 >
 >  Also, if you know enough about HA templates, you can get a template expression that will allow you to stay one step ahead of the changes. Regretfully, the QR will continue to be useless.
 >
-> Unless you save it, you almost can't do anything with it. That's why I used the snapshot automation.
+> Unless you save the QR, you almost can't do anything with it. That's why I used the snapshot automation.
 
 
 **Configuration.yaml**
-Back into the file editor, let's go to `/homeassistant/configuration.yaml`.
 
-Here, just copy and paste the contents of the `configuration.yaml` file in this project into Home Assistant's `configuration.yaml` file.
+Back into the file editor, go to `/homeassistant/configuration.yaml`.
 
-this will create all the sensor entities that you'll need for ESPHome.
+Here, add the contents of the *configuration.yaml* project file into your HA's `configuration.yaml` file.
+
+These are:
+
+1. The `image_processing` entry.
+2. The `input_select` entry.
+3. All the `template` elements.
+
+Make sure the spacing is correct to avoid weird errors. If you already have any of these sections, just append them at the end of each.
+
+This will create all the sensor entities that you'll need for ESPHome, and refresh all the data well be presenting on the Display.
+
+The final step is to install `zbar-tools`, which are necessary for the [QR code integration](https://www.home-assistant.io/integrations/qrcode) to work.
+
+To do so, you need to get the Terminal add-on. Just go to *Settings -> Add-ons -> Add-on Store" and look for the Advanced SSH & Web Terminal.
+
+Once its up, run the following command.
+
+```
+apk add zbar
+```
 
 ### ESPHome
 1. First go to the ESPHome host on PVE.
