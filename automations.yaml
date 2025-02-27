@@ -1,0 +1,37 @@
+- id: '1735953262376'
+  alias: Store Wifi QR
+  description: Stores Wifi QR for ESPHome
+  triggers:
+  - trigger: state
+    entity_id:
+    - image.guests_qr_code
+    from:
+  conditions: []
+  actions:
+  - sequence:
+    - action: image.snapshot
+      metadata: {}
+      target:
+        entity_id: image.guests_qr_code
+      data:
+        filename: /config/www/wifi_qr.png
+  mode: single
+- id: '1739648062584'
+  alias: Renew Guest Password
+  description: Every Thursday at 8:55pm
+  triggers:
+  - trigger: time_pattern
+    hours: '20'
+    minutes: '55'
+    seconds: '00'
+  conditions:
+  - condition: time
+    weekday:
+    - thu
+  actions:
+  - action: button.press
+    metadata: {}
+    data: {}
+    target:
+      entity_id: button.guests_regenerate_password
+  mode: single

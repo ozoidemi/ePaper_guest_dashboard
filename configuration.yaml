@@ -1,0 +1,242 @@
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# configuration.yaml
+image_processing:
+  - platform: qrcode
+    source:
+      - entity_id: camera.qrcode_image
+
+input_select:
+  guest_display_language:
+    name: "Display Language"
+    options:
+      - English
+      - Castellano
+      - Français 
+      - Italiano
+      - Deutsch
+    initial: English
+    icon: mdi:translate
+
+template:
+    # Retrieves full hourly weather data every 5 minutes
+  - trigger:
+      - trigger: time_pattern
+        seconds: 0
+        minutes: /5
+    action:
+      - action: weather.get_forecasts
+        data:
+          type: hourly
+        target:
+          entity_id: weather.forecast_home
+        response_variable: hourly
+    sensor:
+      - name: "Forecast"
+        unique_id: temperature_forecast_next_hour
+        state: "{{ now() }}"
+        attributes:
+            forecast: "{{ hourly['weather.forecast_home'].forecast }}"
+
+  - sensor:
+      # Formatted Sensors
+      # Current time
+      - name: "current_time_formatted"
+        state: >-
+          {% set dt = now() %}
+          {{ dt.strftime('%-I:%M %p').strip() }}
+
+      # Current weekday
+      - name: "current_weekday"
+        state: >-
+          {% set weekday = now().weekday() %}
+          {% set language = states('input_select.guest_display_language') %}
+          {% set days = {
+            'Castellano': ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+            'Français': ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'],
+            'Italiano': ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'],
+            'Deutsch': ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'],
+          } %}
+          {% set default_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+          {{ days[language][weekday] if language in days else default_days[weekday] }}
+    
+      # Current date
+      - name: "current_date_formatted"
+        state: >-
+          {% set dt = now() %}
+          {% set language = states('input_select.guest_display_language') %}
+          {% set day = dt.day %}
+          {% set month = dt.month %}
+          {% set year = dt.year %}
+         
+          {% set months = {
+            'Castellano': ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            'Français': ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+            'Italiano': ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'],
+            'Deutsch': ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+          } %}
+         
+          {% set formats = {
+            'Castellano': day ~ ' de ' ~ months['Castellano'][month-1] ~ ', ' ~ year,
+            'Français': day ~ ' ' ~ months['Français'][month-1] ~ ' ' ~ year,
+            'Italiano': day ~ ' ' ~ months['Italiano'][month-1] ~ ' ' ~ year,
+            'Deutsch': day ~ '. ' ~ months['Deutsch'][month-1] ~ ' ' ~ year
+          } %}
+         
+          {% set default_months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+          {% set suffix = 'th' if 11 <= day <= 13 else {1:'st', 2:'nd', 3:'rd'}.get(day % 10, 'th') %}
+         
+          {{ formats[language] if language in formats else default_months[month-1] ~ ' ' ~ day ~ suffix ~ ', ' ~ year }}          
+    
+      # Sleep Mode Activated
+      - name: "sleep_mode_message"
+        state: >-
+          {% set language = states('input_select.guest_display_language') %}
+              {% set messages = {
+            'Castellano': 'Modo Bajo Consumo Activado',
+            'Français': 'Mode Sommeil Activé',
+            'Italiano': 'Modalità Riposo Attivata',
+            'Deutsch': 'Schlafmodus Aktiviert'
+          } %}
+          {{ messages[language] if language in messages else 'Sleep Mode Activated' }}
+          
+      # Get SSID/Pass from Decoded QR string
+      - name: "wifi_decoded_ssid"
+        state: >-
+            {%- set qr = states('image_processing.qr_qrcode_image') -%}
+            {% if qr and 'WIFI:' in qr %}
+                {{ qr.split('S:')[1].split(';')[0] }}
+            {% else %}
+                unavailable
+            {% endif %}
+
+      - name: "wifi_decoded_pass_part1"
+        state: >-
+            {% set qr = states('image_processing.qr_qrcode_image') %}
+            {% if qr and 'WIFI:' in qr %}
+                {% set pass = qr.split('P:')[1].split(';')[0] %}
+                {{ pass[0:5] ~ ' ' ~ pass[5:10] }}
+            {% else %}
+                unavailable
+            {% endif %}
+
+      - name: "wifi_decoded_pass_part2"
+        state: >-
+            {% set qr = states('image_processing.qr_qrcode_image') %}
+            {% if qr and 'WIFI:' in qr %}
+                {% set pass = qr.split('P:')[1].split(';')[0] %}
+            {{ pass[10:15] ~ ' ' ~ pass[15:20] }}
+            {% else %}
+                unavailable
+            {% endif %}
+
+      # Date/Time forecast sensors
+      - name: "forecast_datetime_1h"
+        state: >-
+            {% set forecast_data = state_attr('sensor.forecast', 'forecast') %}
+            {% if forecast_data is not none and forecast_data|length > 3 %}
+                {% set forecast_time = (forecast_data | map(attribute='datetime') | list)[1] %}
+                {% set dt = strptime(forecast_time, '%Y-%m-%dT%H:%M:%S%z') | as_local %}
+                {{ dt.strftime('%-I%p').strip() }}
+            {% else %}
+                unavailable
+            {% endif %}
+
+      - name: "forecast_datetime_2h"
+        state: >-
+            {% set forecast_data = state_attr('sensor.forecast', 'forecast') %}
+            {% if forecast_data is not none and forecast_data|length > 3 %}
+                {% set forecast_time = (forecast_data | map(attribute='datetime') | list)[2] %}
+                {% set dt = strptime(forecast_time, '%Y-%m-%dT%H:%M:%S%z') | as_local %}
+                {{ dt.strftime('%-I%p').strip() }}
+            {% else %}
+                unavailable
+            {% endif %}
+
+      - name: "forecast_datetime_3h"
+        state: >-
+            {% set forecast_data = state_attr('sensor.forecast', 'forecast') %}
+            {% if forecast_data is not none and forecast_data|length > 3 %}
+                {% set forecast_time = (forecast_data | map(attribute='datetime') | list)[3] %}
+                {% set dt = strptime(forecast_time, '%Y-%m-%dT%H:%M:%S%z') | as_local %}
+                {{ dt.strftime('%-I%p').strip() }}
+            {% else %}
+                unavailable
+            {% endif %}
+
+      # Expected Sunset Time
+      - name: "sunset_time"
+        state: >-
+            {% set sunset_time = state_attr('sun.sun', 'next_setting') %}
+            {% if sunset_time is not none %}
+                {% set dt = strptime(sunset_time, '%Y-%m-%dT%H:%M:%S.%f%z') | as_local %}
+                {{ dt.strftime('%-I:%M %p').strip() }}
+            {% else %}
+                unavailable
+            {% endif %}
+      
+      # Temperature forecast sensors
+      - name: "forecast_temperature_1h"
+        state: >-
+          {% set forecast_data = state_attr('sensor.forecast', 'forecast') %}
+          {% if forecast_data is not none and forecast_data|length > 3 %}
+            {{ (forecast_data | map(attribute='temperature') | list)[1] }}
+          {% else %}
+            unavailable
+          {% endif %}
+
+      - name: "forecast_temperature_2h"
+        state: >-
+          {% set forecast_data = state_attr('sensor.forecast', 'forecast') %}
+          {% if forecast_data is not none and forecast_data|length > 3 %}
+            {{ (forecast_data | map(attribute='temperature') | list)[2] }}
+          {% else %}
+            unavailable
+          {% endif %}
+
+      - name: "forecast_temperature_3h"
+        state: >-
+          {% set forecast_data = state_attr('sensor.forecast', 'forecast') %}
+          {% if forecast_data is not none and forecast_data|length > 3 %}
+            {{ (forecast_data | map(attribute='temperature') | list)[3] }}
+          {% else %}
+            unavailable
+          {% endif %}
+
+      # Condition forecast sensors
+      - name: "forecast_condition_1h"
+        state: >-
+          {% set forecast_data = state_attr('sensor.forecast', 'forecast') %}
+          {% if forecast_data is not none and forecast_data|length > 3 %}
+            {{ (forecast_data | map(attribute='condition') | list)[1] }}
+          {% else %}
+            unavailable
+          {% endif %}
+
+      - name: "forecast_condition_2h"
+        state: >-
+          {% set forecast_data = state_attr('sensor.forecast', 'forecast') %}
+          {% if forecast_data is not none and forecast_data|length > 3 %}
+            {{ (forecast_data | map(attribute='condition') | list)[2] }}
+          {% else %}
+            unavailable
+          {% endif %}
+
+      - name: "forecast_condition_3h"
+        state: >-
+          {% set forecast_data = state_attr('sensor.forecast', 'forecast') %}
+          {% if forecast_data is not none and forecast_data|length > 3 %}
+            {{ (forecast_data | map(attribute='condition') | list)[3] }}
+          {% else %}
+            unavailable
+          {% endif %}
