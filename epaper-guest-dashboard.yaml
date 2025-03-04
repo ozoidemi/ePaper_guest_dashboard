@@ -517,10 +517,10 @@ binary_sensor:
       then:
         - lambda: |-
             if(id(deep_sleep_activated).state) {
-              ESP_LOGI("Binary Sensor", "Deep Sleep flag is %d.", id(deep_sleep_activated).state);
+              ESP_LOGI("Binary Sensor", "Deep Sleep flag is ON.");
               id(epaper75_01).update();
             } else {
-              ESP_LOGI("Binary Sensor", "Deep Sleep flag is %d.", id(deep_sleep_activated).state);
+              ESP_LOGI("Binary Sensor", "Deep Sleep flag is OFF.");
             }
 
   # Disables Deep Sleep functionality
@@ -531,12 +531,15 @@ binary_sensor:
     on_state:
       then:
         - lambda: |-
-            if(id(prevent_deep_sleep).state) {
-              ESP_LOGI("Prevent Deep Sleep", "Prevent Deep Sleep is On");
+            if(id(prevent_deep_sleep).state && id(deep_sleep_activated).state) {
+              ESP_LOGI("Prevent Deep Sleep", "Prevent Deep Sleep is ON");
+              id(epaper75_01).update();
+            } else if (id(prevent_deep_sleep).state) {
+              ESP_LOGI("Prevent Deep Sleep", "Prevent Deep Sleep is ON");
             } else {
-              ESP_LOGI("Prevent Deep Sleep", "Prevent Deep Sleep is Off");
+              ESP_LOGI("Prevent Deep Sleep", "Prevent Deep Sleep is OFF");
             }
-
+            
   # Activates/Disables Screen Padding (Outside Border)
   - platform: homeassistant
     id: canvas_padding_activated
@@ -793,7 +796,6 @@ display:
   model: 7.50inv2alt
   reset_duration: 2ms
   update_interval: never
-  #rotation: 270°
   lambda: |-
     ///////////////////////////////////////////////////////////////////////////////////////////
     //////////////// Auxiliary Coordinates & and multi-use variable definition ////////////////
@@ -1220,14 +1222,17 @@ display:
     ///////////////////////////////////////////////////////////////////////////////////////////
     ////////////////                        Sleep Status                       ////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
-    if (id(deep_sleep_activated).state) {
+    if (id(deep_sleep_activated).state && !id(prevent_deep_sleep).state) {
       ESP_LOGI("Sleep Mode Message", "Sleep Flag is: ON.");
       it.printf(canvas.current_weather.x + canvas.cell.width/2,
                 canvas.current_weather.y + canvas.current_weather.height,
                 id(roboto_ssid), TextAlign::TOP_CENTER, "%s", id(sleep_message).state.c_str());
       ESP_LOGI("Sleep Mode Message", "Sleep message: %s. Printed", id(sleep_message).state.c_str());
-    } else {
+    } else if (!id(deep_sleep_activated).state) {
       ESP_LOGI("Sleep Mode Message", "Sleep flag is: OFF.");
+      ESP_LOGI("Sleep Mode Message", "Sleep message: %s. Received but not printed", id(sleep_message).state.c_str());
+    } else {
+      ESP_LOGI("Sleep Mode Message", "Sleep is being prevented.");
       ESP_LOGI("Sleep Mode Message", "Sleep message: %s. Received but not printed", id(sleep_message).state.c_str());
     }
     //
