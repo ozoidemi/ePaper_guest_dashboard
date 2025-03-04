@@ -43,10 +43,10 @@ Well, that's it. Stan's dead. Good night.\*
 ---
 
 ### Hold on... Can I make this work without Unifi?
-Absolutely. You'll need to modify HA and ESPhome.
+Absolutely. You'll need to modify the `configuration.yaml` and `epaper-guest-dashboard.yaml` files.
 
 #### HA modifications:
-1. Don't add the automations to your `automations.yaml` file.
+1. **Don't add** the automations to your `automations.yaml` file.
 2. Create a template sensor (e.g., "sensor.qr_string") and manually build up your credentials.   
     - The format is: `WIFI:T:WPA;S:<SSID>;P:<PASS>;;`
       - Where \<SSID\> is your network's name...
@@ -80,7 +80,7 @@ wifi_password: password
 ```
 
 #### ESPHome modifications:
-1. Find `id: wifi_qr_string` on the ESPHome device yaml (currently ln. 761).
+1. Find `id: wifi_qr_string` on the `epaper-guest-dashboard.yaml` file (currently ln. 757).
 2. Replace the entity_id value with the entity created on HA - `entity_id: sensor.qr_string`
 
 > **Keep in mind:**  
@@ -379,7 +379,8 @@ Once its up, run the following command.
 apk add zbar
 ```
 
-### ESPHome
+### ESPHome Host
+
 1. First go to the ESPHome host on PVE.
 2. Open the shell.
 3. Go to the `config/custom_components` directory. `cd config/custom_components`
@@ -390,6 +391,25 @@ You can quickly verify that the content of the file is correct using the `cat` c
 ```
 cat canvas_struct.h
 ```
+
+### ESPHome Device
+
+Just load up the `epaper-guest-display.yaml` file onto your device's yaml. 
+
+Make sure to update the following substitutions / relevant values at the beginning:
+
+1. Update `guest_ssid_switch: "switch.guests"` to match the SSID for your guest wifi.
+2. Adjust ln. 63 and 64 in case your screen wasn't 800x480 px. 
+
+Then make sure to define these entries on your `secrets.yaml` file:
+   
+1. Define `homeassistant_api_encryption_key`.
+2. Define `ota_update_password`.
+3. Define `wifi_ssid` and `wifi_password`.
+    - These define the wifi network your ESPHome device will connect to. As such, these not only **SHOULD** be different from the credentials that will be displayed on your screen, but also should be kept **completely confidential**.
+4. Define `wifi_ssid_fallback` and `wifi_password_fallback` in case the wifi connection fails.
+
+Then just Install, kick back and wait for the screen to retrieve and load up all the info you have.
 
 #### Note on ESP_ERR_NVS_NOT_ENOUGH_SPACE
 
