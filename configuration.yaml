@@ -1,16 +1,7 @@
 
-# Loads default set of integrations. Do not remove.
-default_config:
-
-# Load frontend themes from the themes folder
-frontend:
-  themes: !include_dir_merge_named themes
-
 automation: !include automations.yaml
-script: !include scripts.yaml
-scene: !include scenes.yaml
 
-# configuration.yaml
+# QR Code decoding integration
 image_processing:
   - platform: qrcode
     source:
@@ -18,6 +9,7 @@ image_processing:
         name: qr_string
 
 input_select:
+  # Language selector
   guest_display_language:
     name: "Display Language"
     options:
@@ -28,6 +20,28 @@ input_select:
       - Deutsch
     initial: English
     icon: mdi:translate
+
+input_boolean:
+  # Helpers - configuration and functional variables
+  guest_display_border:
+    name: "guest_display_border_flag"
+    icon: "mdi:border-outside"
+    
+  guest_display_grid_activated:
+    name: "guest_display_grid_activated"
+    icon: mdi:border-inside
+    
+  guest_display_prevent_deep_sleep:
+    name: "guest_display_prevent_deep_sleep"
+    icon: "mdi:sleep-off"
+
+binary_sensor:
+ # Activate and desactivate Deep Sleep daily
+ - platform: tod
+   name: Guest Display Deep Sleep Flag
+   after: "21:58"
+   before: "07:58"
+   unique_id: guest_display_deep_sleep_flag
 
 template:
     # Retrieves full hourly weather data every 5 minutes
