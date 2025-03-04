@@ -1,9 +1,11 @@
 # Multi-language Guest Dashboard for ESPHome
-<img src="https://github.com/user-attachments/assets/369b15c7-1a71-4c7f-b978-df97bad4e748" width=60% height=60%>
+<img src="https://github.com/user-attachments/assets/369b15c7-1a71-4c7f-b978-df97bad4e748" width=80% height=80%>
 
 ---
 
-**WARNING -- You will be storing and exposing your guest network's password in plain text.**
+**\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\* WARNING \*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\***
+
+**This project stores and exposes your guest network's password in plain text.**
 
 **Proceed at your own risk!**
 
