@@ -43,20 +43,45 @@ Well, that's it. Stan's dead. Good night.\*
 ---
 
 ### Hold on... Can I make this work without Unifi?
-Absolutely.
+Absolutely. You'll need to modify HA and ESPhome.
 
 #### HA modifications:
 1. Don't add the automations to your `automations.yaml` file.
-2. Create a template sensor (e.g., "sensor.qr_credential_string") and manually build up your credentials.   
+2. Create a template sensor (e.g., "sensor.qr_string") and manually build up your credentials.   
     - The format is: `WIFI:T:WPA;S:<SSID>;P:<PASS>;;`
       - Where \<SSID\> is your network's name...
       - ...and \<PASS\> is your network's password.
-3. Search for `image_processing.qr_qrcode_image` on the project's `configuration.yaml`
+3. Search for `image_processing.qr_string` on the project's `configuration.yaml`
 4. Replace all occurrences using the sensor name you created.
+
+
+One way to achieve this could be:
+
+`configuration.yaml`
+```
+template
+  - sensors:
+      - name: "wifi_ssid"
+        state: !secret wifi_ssid
+
+      - name: "wifi_password"
+        state: !secret wifi_password
+
+      - name: "qr_string"
+        state: >-
+          WIFI:T:WPA;S:{{states('sensor.wifi_ssid')}};P:{{states('sensor.wifi_password')}};;
+```
+
+`secrets.yaml`
+```
+wifi_ssid: ssid
+wifi_password: password
+# passwords longer or shorter than 20 chars will look weird 
+```
 
 #### ESPHome modifications:
 1. Find `id: wifi_qr_string` on the ESPHome device yaml (currently ln. 761).
-2. Replace the entity_id value with the entity created on HA - `entity_id: sensor.qr_credential_string`
+2. Replace the entity_id value with the entity created on HA - `entity_id: sensor.qr_string`
 
 > **Keep in mind:**  
 > Passwords created by the Unifi Network Integration are always 20-char long random passwords.  
@@ -101,25 +126,23 @@ Yes. I mentioned it already, but let's hit it one more time for the people in th
 **DISCLAIMER**
 **This project stores and exposes WiFi credentials in plain text!** Both on Home Assistant and on the ESPHome device.
 
-Please thoroughly evaluate your own security or consult with a specialist if you are unsure.
+Please thoroughly evaluate your own security or consult with a specialist if you are unsure. You know, the kind of people that actually know what they are talking about (unlike myself).
 
 If you don't understand the risks involved, then do yourself a favor and **avoid using this project!**
 
-Once we have all the prerequisites in place, we can start working on the actual display.
-
 #### Fact 2 out of 3
 
-Note that the Unifi Network Integration team has taken active steps to complicate getting the network password into a sensor. There are very good reasons for this.
+The Unifi Network Integration team decided against having the network password stored into a sensor. There are very good reasons for this.
 
-In fact, at one point they had enabled this password sensor, only to roll it back soon after due to security concerns. 
+In fact, at one point they had enabled this functionality, only to roll it back soon after due to security concerns. 
 
 That should be understood in two ways:
-1. Enabling a sensor to store the password will require some elbow grease.
+1. Enabling a sensor to store a password will require some elbow grease.
 2. Don't mess with this if you don't fully understand what you are doing.
 
 #### Fact 3 out of 3
 
-You should **DEFINITELY** know that the guy who developed the base QR code implementation—which was later adopted by the official Unifi Network integration in HA—had this to say about my idea:
+You should **DEFINITELY** know that the guy who developed the base QR code implementation—which was later adopted by the official Unifi Network integration team in HA—had this to say about my idea:
 
 > You do you, but I for one will never do any of the things you just suggested. In fact, given what you just wrote, I question the need for you to even have a QR code at all.
 
@@ -129,9 +152,7 @@ You should **DEFINITELY** know that the guy who developed the base QR code imple
 
 *Deservingly so?* Still perhaps.
 
-But forcing users into dealing with a 20-char long random password if they can't read the QR, that only works in the mind of someone who has never had guests.
-
-I also roll the way Incubus does on *Make Yourself*.
+But what kind of person sees no issue in forcing users into dealing with a 20-char long random password if their devices can't read the QR? The kind that is not trained to think about users. Because users are guests. And they probably don't understand the concept of "guests". Because they have never had any.
 
 Moving on...
 
@@ -140,6 +161,7 @@ Moving on...
 # Implementing the project
 
 ## What are the prerequisites?
+
 - Home Assistant installation
   - Home assistant should be running the Unifi Network integration
 - ESPHome host
@@ -175,7 +197,7 @@ Then choose all the defaults, except for the container type, which should be pri
 
 #### Network
 
-Running a UXG-Pro with Unifi Network 9.0.114 on a local CK-Gen2. Also multiple U6+ APs, and multiple USW-24-POE switches.
+Running a UXG-Pro with Unifi Network 9.0.114 on a local CK-Gen2. Also multiple U6+/U6 lite APs, and multiple USW-24-POE switches.
 
 My guest network isolates all devices from one another in the same VLAN, and prevents them from accessing any other VLANs.
 
@@ -185,9 +207,9 @@ For the purposes of this project, we'll assume your guest network SSID is `guest
 
 ### I have a Unifi Network infrastructure, but I don't have the integration.
 
-[Skip ahead](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#esphome-device) if this isnt your case.
+[Skip ahead](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#esphome-device) if this isn't your case and you have already activated the QR sensor.
 
-If it is, get it installed following the instructions on the Home Assistant Unifi Network integration [page](https://www.home-assistant.io/integrations/unifi/).
+If it is, get the integration installed following the instructions on the Home Assistant Unifi Network integration [page](https://www.home-assistant.io/integrations/unifi/).
 
 Once the integration is up and running in HA, go to *Settings -> Devices & Services -> Entities*.
 
@@ -203,9 +225,9 @@ The latter two entities should be disabled if you haven't touch them.
 
 Click on them, then click on the cog in the upper right to go to settings, and then enable the entities.
 
-Upon enablement, Home Assistant can now automatically generate a QR code with the SSID and password needed to log into your guests network. At first, it will have whatever password you gave to your network.
+Upon enablement, Home Assistant can now automatically generate a QR code with the SSID and password needed to log into your guests network. At first, it will have whatever password you assigned to your network.
 
-However, your button entity will now enable you to create and apply a 20-char random password to your guest network without any work on your part. This is a fixed string, and there is nothing you can do to adapt it to better suit your needs.
+However, your button entity will now enable you to create and apply a 20-char random password to your guest network without any work on your part. Just remember this is a fixed string, and there is nothing you can (easily) do to adapt it to better suit your needs.
 
 We'll still take advantage of these two entities later on.
 
@@ -257,15 +279,17 @@ At least for my HW revision, the wiki documentation works perfectly well.
 
 ### Flashing the device
 
-This could be as much fun as having a dentist appointment while suffering from explosive diarrhea. I truly hope your experience will be much better than mine.
+This could be as much fun as having a dentist appointment for a root canal while suffering from explosive diarrhea.
+
+I hope it isn't.
 
 ESP32 devices can be very temperamental when it comes to ESPHome flashing. One way around is to connect the soon-to-be-flashed device directly to the ESPHome Host.
 
 Since my host is a Proxmox LXC, I needed a USB passthrough to the container. If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main)
 
-If you did, just plug in the device and go.
+If you did, just plug in the device and go. And if that worked, just [skip ahead](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#programming-the-display)
 
-However, if for some reason that didn't work, you can try the following:
+If for some reason it didn't, you can try the following:
 
 Go to your web browser and type your Proxmox VE IP address, with port 8006.
 
@@ -341,9 +365,9 @@ These are:
 2. The `input_select` entry.
 3. All the `template` elements.
 
-Make sure the spacing is correct to avoid weird errors. If you already have any of these sections, just append them at the end of each.
+Make sure the spacing is correct to avoid weird errors. If you already have any of these sections, just append the new entries at the end of each section.
 
-This will create all the sensor entities that you'll need for ESPHome, and refresh all the data well be presenting on the Display.
+This will create all the sensor entities that you'll need for ESPHome, and refresh all the data we'll be presenting on the Display.
 
 The final step is to install `zbar-tools`, which are necessary for the [QR code integration](https://www.home-assistant.io/integrations/qrcode) to work.
 
