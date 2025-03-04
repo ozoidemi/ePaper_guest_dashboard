@@ -15,6 +15,7 @@ image_processing:
   - platform: qrcode
     source:
       - entity_id: camera.qrcode_image
+        name: qr_string
 
 input_select:
   guest_display_language:
