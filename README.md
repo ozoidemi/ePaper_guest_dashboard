@@ -391,6 +391,18 @@ You can quickly verify that the content of the file is correct using the `cat` c
 cat canvas_struct.h
 ```
 
+#### Note on ESP_ERR_NVS_NOT_ENOUGH_SPACE
+
+If during the compilation and programming of your ESPHome device, you ever get this NVS error, use the following commands.
+
+```
+dd if=/dev/zero of=nvs_zero bs=1 count=20480
+esptool.py --chip esp32 --port /dev/ttyACM0 write_flash 0x009000 nvs_zero
+```
+
+The first command writes a file of null bytes the typical size of your NVS, naming it nvs_zero.
+
+The second command writes the file on your ESPHome device at 0x009000, which is the typical location for the NVS file. Note that `/dev/ttyACM0` depends on your installation, and you will need to verify the rigth entry for your project.
 
 ## Bonus
 ### Presentation
