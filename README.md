@@ -29,7 +29,7 @@
 #### Note that:
 1. MDIs are imported as images.
 
-    This means you must have `cairosvg` and `libcairo2-dev` packages installed on your ESPHome Host Platform, 
+    This means you must have `cairosvg` and `libcairo2-dev` packages installed on your ESPHome Host Platform.
 
     ```
     pip install cairosvg
@@ -44,7 +44,9 @@
 
 3. All helper entities have been included in the `configuration.yaml` file.
 
-   However, `binary_sensor.guest_display_deep_sleep_flag` does not support an `icon` option. To add one, it must be done via the GUI. I used `mdi:sleep`.
+   However, `binary_sensor.guest_display_deep_sleep_flag` does not support an `icon` option.
+
+   To add one, you'll have to do so via the GUI. e.g., `mdi:sleep`.
 
 Well, that's it. Stan's dead. Good night.\*
 
@@ -55,51 +57,45 @@ Absolutely. You'll need to modify the `configuration.yaml` and `epaper-guest-das
 
 #### HA modifications:
 1. **Don't add** the automations to your `automations.yaml` file.
-2. Create a template sensor (e.g., "sensor.qr_string") and manually build up your credentials.   
+2. Create a template sensor (e.g., `sensor.qr_string`) and manually build up your credentials.   
     - The format is: `WIFI:T:WPA;S:<SSID>;P:<PASS>;;`
       - Where \<SSID\> is your network's name...
       - ...and \<PASS\> is your network's password.
-3. Search for `image_processing.qr_string` on the project's `configuration.yaml`
-4. Replace all occurrences using the sensor name you created.
+      - Use 20-char long passwords to keep the display format.
+        
+        ```
+        # secrets.yaml
+        wifi_ssid: ssid
+        wifi_password: password
+        ```
+        
+        ```
+        # configuration.yaml
+        template
+          - sensors:
+              - name: "wifi_ssid"
+                state: !secret wifi_ssid
+        
+              - name: "wifi_password"
+                state: !secret wifi_password
+        
+              - name: "qr_string"
+                state: >-
+                  WIFI:T:WPA;S:{{states('sensor.wifi_ssid')}};P:{{states('sensor.wifi_password')}};;
+        ```
 
-
-One way to achieve this could be:
-
-`configuration.yaml`
-```
-template
-  - sensors:
-      - name: "wifi_ssid"
-        state: !secret wifi_ssid
-
-      - name: "wifi_password"
-        state: !secret wifi_password
-
-      - name: "qr_string"
-        state: >-
-          WIFI:T:WPA;S:{{states('sensor.wifi_ssid')}};P:{{states('sensor.wifi_password')}};;
-```
-
-`secrets.yaml`
-```
-wifi_ssid: ssid
-wifi_password: password
-# passwords longer or shorter than 20 chars will look weird 
-```
+4. Search for `image_processing.qr_string` on the project's `configuration.yaml`...
+5. ... and replace all occurrences using the sensor name you created. e.g., `sensor.qr_string`.
 
 #### ESPHome modifications:
-1. Find `id: wifi_qr_string` on the `epaper-guest-dashboard.yaml` file (currently ln. 757).
-2. Replace the entity_id value with the entity created on HA - `entity_id: sensor.qr_string`
-
-> **Keep in mind:**  
-> Passwords created by the Unifi Network Integration are always 20-char long random passwords.  
-> Using a different password length will affect the Display layout.
+1. Find `entity_id: image_processing.qr_string` on the `epaper-guest-dashboard.yaml` file.
+2. Replace it with the entity created on HA - `entity_id: sensor.qr_string`
 
 With that out of the way, let's dive into the details...
 
 ## Is this project right for you?
 
-Feel free skipping to the [implementation details](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#Implementing-the-project) if you are comfortable securing a public wifi network.
+Skip to [implementation details](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#Implementing-the-project) if you are comfortable securing a public wifi network.
 
 Otherwise, please read on.
 
