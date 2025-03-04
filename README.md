@@ -3,11 +3,11 @@
 
 ---
 
-**\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\* WARNING \*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\***
+## WARNING
 
 **This project stores and exposes your guest network's password in plain text.**
 
-**Proceed at your own risk!**
+**DO NOT implement if you don't understand the serious risks involved!**
 
 ---
 
@@ -22,23 +22,29 @@
 ### Installation
 - [ ] Make sure to properly isolate your guest network through the Unifi Network app.
 - [ ] Add the automation rules from the *automations.yaml* project file to your HA's `automations.yaml` file.
-- [ ] Declare the template entities from the *configuration.yaml* project file to your HA's `configuration.yaml` file.
+- [ ] Declare all the entities from the *configuration.yaml* project file to your HA's `configuration.yaml` file.
 - [ ] Copy the header file to the project folder on your ESPHome Host.
-- [ ] Load up the device yaml on your preferred ESPHome Device Editor and install.
+- [ ] Load up the `epaper_guest_deshboard.yaml` file on your ESPHome driver board and install.
 
 #### Note that:
-You must have `cairosvg` and `libcairo2-dev` packages installed on your ESPHome Host Platform, 
+1. MDIs are imported as images.
 
-```
-pip install cairosvg
-apt install libcairo2-dev
-```
+    This means you must have `cairosvg` and `libcairo2-dev` packages installed on your ESPHome Host Platform, 
 
-Also, using the QR Code integration for decoding requires `zbar-tools` on HAOS.
+    ```
+    pip install cairosvg
+    apt install libcairo2-dev
+    ```
 
-```
-apk add zbar
-```
+2. The QR integration on requires `zbar-tools` on HAOS.
+
+    ```
+    apk add zbar
+    ```
+
+3. All helper entities have been included in the `configuration.yaml` file.
+
+   However, `binary_sensor.guest_display_deep_sleep_flag` does not support an `icon` option. To add one, it must be done via the GUI. I used `mdi:sleep`.
 
 Well, that's it. Stan's dead. Good night.\*
 
