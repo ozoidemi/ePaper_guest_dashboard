@@ -136,7 +136,7 @@ esphome:
 esp32:
   board: esp32dev
   framework:
-    type: arduino
+    type: esp-idf
 
 deep_sleep:
   id: deep_sleep_control
