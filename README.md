@@ -14,25 +14,32 @@
 ## TL;DR.
 ### You'll need:
 - UniFi Network
-- Home Assistant instance running the Unifi Network Integration
+- Home Assistant running the Unifi Network Integration
 - ESPHome host
-- Waveshare 7.5 inch Display (2-tone grey)
+- Waveshare 7.5 inch Display (2-tone grey, 800x480px)
 - Waveshare driver board flashed with ESPHome
 
 ### Installation
-- [ ] Make sure to properly isolate your guest network through the Unifi Network app.
-    - [ ] This script will work (mostly) right out of the gate if your network SSID is "guests".
-- [ ] Add the automation rules from the *automations.yaml* project file to your HA's `automations.yaml` file.
-- [ ] Declare all the entities from the *configuration.yaml* project file to your HA's `configuration.yaml` file.
-- [ ] Copy the `canvas_struct.h` header file to the project folder on your ESPHome Host.
+- [ ] Isolate your guest network.
+    - [ ] For minimal modifications use SSID "guests".
+- [ ] Add automation rules to HA's `automations.yaml` file.
+- [ ] Declare all the configuration entities on your HA's `configuration.yaml` file.
+- [ ] Copy the `canvas_struct.h` header file to `~/custom_components/` on your ESPHome Host.
 - [ ] Load up the `epaper_guest_deshboard.yaml` file on your ESPHome driver board.
-- [ ] Adjust the substitutions, add the corresponding passwords to your ESPHome's `secrets.yaml` file, and install.
-- [ ] Create the HA dashboard card so that you can enable/disable the wireless network, monitor users, or tweak the dimensions involved.
+    - [ ] Adjust the esphome name and friendly name
+    - [ ] Ensure the `secrets.yaml` file includes entries for:
+        - [ ] wifi_ssid
+        - [ ] wifi_password
+        - [ ] wifi_ssid_fallback
+        - [ ] wifi_password_fallback
+        - [ ] homeassistant_api_encryption_key
+        - [ ] ota_update_password
+- [ ] Create a HA dashboard card to control your display from HA.
 
 #### Note that:
 1. MDIs are imported as images.
 
-    This means you must have `cairosvg` and `libcairo2-dev` packages installed on your ESPHome Host Platform.
+    You'll need `cairosvg` and `libcairo2-dev` on the ESPHome Host
 
     ```
     pip install cairosvg
@@ -41,17 +48,17 @@
 
 2. The Home Assistant QR integration requires `zbar-tools`.
    
-    To add it, just execute the following command on HA's terminal:
+    On HA's terminal run
 
     ```
     apk add zbar
     ```
 
-4. All helper entities have been included in the `configuration.yaml` file.
+3. The `configuration.yaml` file includes all helper entities.
 
    However, `binary_sensor.guest_display_deep_sleep_flag` does not support an `icon` option.
 
-   To add one, you'll have to do so via the GUI (e.g., `mdi:sleep`).
+   This must be done via GUI (e.g., `mdi:sleep`).
 
 And that's it.
 
@@ -59,15 +66,14 @@ And that's it.
 
 ### Hold on... Can I make this work without Unifi?
 
-Absolutely! Though, the following code hasn't been tested. That's my next step.
+Yes, but I haven't tested the code (yet).
 
-To try it out yourself:
+To try it:
 
 1. **Ignore** the `automations.yaml` file.
 2. Use the files under the `no_unifi` directory.
-3. In `secrets.yaml` replace `your_ssid` and `your_password` with your own.
-    - Remember to use a 20-char long password.
-    - Also remember this is the HA's `secrets.yaml` file.
+3. In HA's `secrets.yaml`, replace `your_ssid` and `your_password` with your own.
+    - Password must be 20 chars long.
 
 ---
 
@@ -531,6 +537,8 @@ FYI: These pictures aren't mine. They are here just to illustrate the kind of lo
 As the first half-decent version, I still have a lot of work to do in this implementation.
 
 Things I'm thinking of in no particular order:
+
+- Automate deleting the QR snapshot from HA.
 
 - Clean up the code.
 
