@@ -37,13 +37,15 @@
     apt install libcairo2-dev
     ```
 
-2. The QR integration on requires `zbar-tools` on HAOS.
+2. The Home Assistant QR integration requires `zbar-tools`.
+   
+    To add it, just execute the following command on HA's terminal:
 
     ```
     apk add zbar
     ```
 
-3. All helper entities have been included in the `configuration.yaml` file.
+4. All helper entities have been included in the `configuration.yaml` file.
 
    However, `binary_sensor.guest_display_deep_sleep_flag` does not support an `icon` option.
 
@@ -55,9 +57,9 @@ And that's it.
 
 ### Hold on... Can I make this work without Unifi?
 
-Absolutely! Though, the following code hasn't been tested.
+Absolutely! Though, the following code hasn't been tested. That's my next step.
 
-To try it out:
+To try it out yourself:
 
 1. **Ignore** the `automations.yaml` file.
 2. Use the files under the `no_unifi` directory.
@@ -120,7 +122,9 @@ The Unifi Network Integration team decided against having the network password s
 
 There are very good reasons for this.
 
-In fact, at one point they had enabled this functionality, only to roll it back soon after due to security concerns. 
+In fact, at one point they had enabled this functionality, only to roll it back soon after due to security concerns.
+
+With great power comes great responsibility... thankfully, no power means no responsibility, right? RIGHT?
 
 #### Fact 3 out of 3
 
@@ -202,7 +206,7 @@ Since my host is a Proxmox LXC, I needed a USB passthrough to the container.
 
 If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#privileged-container-type).
 
-Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#troubleshooting) section if you have furher issues, or want to know more about my own installation.
+Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#troubleshooting) section if you want to know more about my own installation, or if you have further issues.
 
 ### Programming the display
 
@@ -220,9 +224,11 @@ The first entry takes a snapshot of the QR code (`image.guests_qr_code`) and sto
 
 The second ensures that the guest network password is updated automatically at least weekly. If you need a different schedule, then adjust accordingly. It will not break anything, and you could easily remove it altogether.
 
-> **I don't get it... why are we taking a snapshot of a QR code that already exists?**
+> **I don't get it... why are we taking a snapshot of a QR, storing and decoding it, and then sending the decoded info to ESPHome so that it can be rebuilt from scratch? Can't we just pass over the existing QR and be done with it?**
 >
-> Because even when the Unifi Network Integration generates a QR code for us automatically, it:
+> Not really, no.
+> 
+> Even when the Unifi Network Integration generates a QR code for us automatically, it:
 > 1. Only exists in memory.
 > 2. Is much harder to use than what you might think.
 >
@@ -231,6 +237,8 @@ The second ensures that the guest network password is updated automatically at l
 >  Also, if you know enough about HA templates, you can get a template expression that will allow you to stay one step ahead of the changes. Regretfully, the QR will continue to be useless.
 >
 > Unless you save the QR, you almost can't do anything with it. That's why I used the snapshot automation.
+>
+> In fact, even if you were to send the QR as an image to the ESPHome device, you'd still need to get the snapshot first.
 
 #### Configuration.yaml
 
@@ -263,7 +271,7 @@ Once its up, run the following command.
 apk add zbar
 ```
 
-That should be it from the Home Assistant side.
+That should be all from the Home Assistant side.
 
 ### ESPHome Host
 
@@ -272,10 +280,11 @@ That should be it from the Home Assistant side.
 4. Go to the `config/custom_components` directory. `cd config/custom_components`
 5. Copy the `canvas_struct.h` into that directory.
     5. If you don't know how to, you can:
-        6. Create a new file called `canvas_struct.h'. You can use `nano canvas_struct.h`
+        6. Create a new file called `canvas_struct.h'. For that, simply use the command `nano canvas_struct.h`
         7. Paste the contents of the `canvas_struct.h' project file and save (ctrl + s, ctrl + x).
 
 You can quickly verify that the content of the file is correct using the `cat` command.
+
 ```
 cat canvas_struct.h
 ```
