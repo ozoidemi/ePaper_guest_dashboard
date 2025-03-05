@@ -1034,11 +1034,11 @@ display:
             "- -", canvas.current_weather.x + 2*w, canvas.current_weather.y + 5*h/2);
     //
     // UV Printing
-    if (id(ha_uv_index).state < 1) {
+    if (id(ha_uv_index).state < 0.5) {
         it.filled_gauge(canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5, 3*h/5, h/5, 0);
         ESP_LOGI("Current Weather", "UV Index ZERO printed at x: %d pixels, y: %d pixels",
                 canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5);
-    } else if ( 1 <= id(ha_uv_index).state && id(ha_uv_index).state < 2.5) {
+    } else if ( 0.5 <= id(ha_uv_index).state && id(ha_uv_index).state < 2.5) {
         it.filled_gauge(canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5, 3*h/5, h/5, 20);
         ESP_LOGI("Current Weather", "UV Index LOW printed at x: %d pixels, y: %d pixels",
                 canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5);
