@@ -495,18 +495,6 @@ sensor:
 
 binary_sensor:
   # Switch data retrieved from Home Assistant
-  # Identifies whether guest wifi is On/Off
-  - platform: homeassistant
-    id: wifi_status
-    entity_id: $guest_ssid_switch
-    internal: True
-    name: "WiFi On/Off"
-    on_state:
-      then:
-        - lambda: |-
-            // Perform screen update if it detects Wifi status change
-            id(epaper75_01).update();
-  
   # Identifies whether Deep Sleep is On/Off
   - platform: homeassistant
     id: deep_sleep_activated
@@ -913,25 +901,23 @@ display:
     //
     // Print QR code and credentials if guest wifi is on, otherwise print wifi off icon
     if (qr_width > 0 && qr_height > 0) {
-      if (id(wifi_status).state) {
-        if ((x_qr >= canvas.qr.x && x_qr <= canvas.qr.x + canvas.cell.width) &&
-            (y_qr >= canvas.qr.y && y_qr <= canvas.qr.y + canvas.cell.height)) {
-          it.qr_code(x_qr, y_qr, id(wifi_qr_internal), Color(255,255,255), canvas.qr.scale_factor);
-          it.image(x_ssid_pass, y_ssid_pass, id(icon_wifi_on));
-          it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + canvas.qr.icon_height/2,
-                  id(roboto_ssid), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_ssid).state.c_str());
-          it.image(x_ssid_pass, y_ssid_pass + canvas.qr.icon_height, id(icon_pass));
-          it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + 3*canvas.qr.icon_height/2,
-                  id(roboto_pass), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_pass_1).state.c_str());
-          it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + 5*canvas.qr.icon_height/2,
-                  id(roboto_pass), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_pass_2).state.c_str());
-          //
-          // Log print and dimension
-          ESP_LOGI("Image Location", "QR code printed at x: %d pixels, y: %d pixels", x_qr, y_qr);
-          ESP_LOGI("Image Location", "Wifi On icon printed at x: %d pixels, y: %d pixels", x_ssid_pass, y_ssid_pass);
-          ESP_LOGI("Image Location", "Pass icon printed at x: %d pixels, y: %d pixels", x_ssid_pass,
-                  y_ssid_pass + canvas.qr.icon_height);
-        }
+      if ((x_qr >= canvas.qr.x && x_qr <= canvas.qr.x + canvas.cell.width) &&
+          (y_qr >= canvas.qr.y && y_qr <= canvas.qr.y + canvas.cell.height)) {
+        it.qr_code(x_qr, y_qr, id(wifi_qr_internal), Color(255,255,255), canvas.qr.scale_factor);
+        it.image(x_ssid_pass, y_ssid_pass, id(icon_wifi_on));
+        it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + canvas.qr.icon_height/2,
+                id(roboto_ssid), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_ssid).state.c_str());
+        it.image(x_ssid_pass, y_ssid_pass + canvas.qr.icon_height, id(icon_pass));
+        it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + 3*canvas.qr.icon_height/2,
+                id(roboto_pass), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_pass_1).state.c_str());
+        it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + 5*canvas.qr.icon_height/2,
+                id(roboto_pass), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_pass_2).state.c_str());
+        //
+        // Log print and dimension
+        ESP_LOGI("Image Location", "QR code printed at x: %d pixels, y: %d pixels", x_qr, y_qr);
+        ESP_LOGI("Image Location", "Wifi On icon printed at x: %d pixels, y: %d pixels", x_ssid_pass, y_ssid_pass);
+        ESP_LOGI("Image Location", "Pass icon printed at x: %d pixels, y: %d pixels", x_ssid_pass,
+                y_ssid_pass + canvas.qr.icon_height);
       } else {
         it.image(canvas.qr.x_wifi_off, canvas.qr.y_wifi_off, id(icon_wifi_off), ImageAlign::CENTER);
         // Log print
