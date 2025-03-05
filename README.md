@@ -1,5 +1,5 @@
 # Multi-language Guest Dashboard for ESPHome
-<img src="https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/overview.jpg" width=80% height=80%>
+<img src="main/resources/overview.jpg" width=80% height=80%>
 
 ---
 
