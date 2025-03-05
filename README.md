@@ -50,11 +50,9 @@
 
 And that's it.
 
----
-
 ### Hold on... Can I make this work without Unifi?
 
-Absolutely! Though the following code hasn't been fully tested.
+Absolutely! Though, the following code hasn't been tested.
 
 To try it out:
 
@@ -63,31 +61,35 @@ To try it out:
 3. In `secrets.yaml` replace `your_ssid` and `your_password` with your own.
     Remember to use a 20-char long password. 
 
+---
+
 With that out of the way, let's dive into the details...
 
-## Is this project right for you?
-
-Skip to [implementation details](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#Implementing-the-project) if you are comfortable securing a public wifi network.
-
-Otherwise, please read on.
+## Project Details
 
 ### What is the purpose of this project?
+
 My parents love to entertain people. They also love living in an area with limited cell coverage. And they also have no qualms about making their tech problems someone else's tech problems...
 
 So, when a guest comes around asking to "get wifi" (*\*\*shudders\*\**), guess who is now responsible to deal with the request...
 
 As such, this project has two goals
 - Present a device-agnostic response to non-tech visitors needing WAN access on a semi-isolated location.
-- Relieve any tech person in the vicinity from having to play the on-call tech support role in any way.
+- Relieve any tech person in the vicinity from having to play the on-call tech support role in any way, shape, or form.
 
 ### Who is this project intended for? (and who should stay away!)
+
 People who:
 1. Understand the pros and cons involved in managing convenience vs network security.
 2. Hate captive portals.
 3. Typically entertain friends and family.
 4. Would be comfortable managing a public WiFi network.
 
-So if you have trouble figuring out how (or even *why*) should you isolate all your client devices on your guest network, or if setting up VLANs and creating Firewall rules sounds like a hassle to you... Well, I really hope you learn about them one day because you are missing out.
+If you are ok with those, please skip to [implementation details](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#Implementing-the-project).
+
+Otherwise, please read on.
+
+If you have trouble figuring out how (or even *why*) should you isolate all your client devices on your guest network, or if setting up VLANs and creating Firewall rules sounds like a hassle to you... Well, I really hope you learn about them one day because you are missing out.
 
 Until then, please know that the downside of implementing this project far outweighs any gains that you could ever get from it.
 
@@ -100,7 +102,9 @@ Seriously.
 Yes. I mentioned it already, but let's hit it one more time for the people in the back:
 
 **DISCLAIMER**
-**This project stores and exposes WiFi credentials in plain text!** Both on Home Assistant and on the ESPHome device.
+**This project stores and exposes WiFi credentials in plain text!**
+
+Both on Home Assistant and on the ESPHome device.
 
 Please thoroughly evaluate your own security or consult with a specialist if you are unsure. You know, the kind of people that actually know what they are talking about (unlike myself).
 
@@ -126,20 +130,11 @@ You should **DEFINITELY** know that the guy who developed the base QR code imple
 
 *Deservingly so?* Still perhaps.
 
-But what kind of person sees no issue in forcing users into dealing with a 20-char long random password if their devices can't read the QR?
-
-Moving on...
+But what kind of person sees no issue in shoving a 20-char long random password down their users' throat, when it is possible that users won't be able to use the QR in the first place?
 
 **FINAL WARNING - If you decide to proceed, know that you are doing so at your own risk!**
 
 # Detailed Implementation
-
-## What are the prerequisites?
-
-- Home Assistant installation
-  - Home assistant should be running the Unifi Network integration
-- ESPHome host
-- Network infrastructure based on Unifi Network
 
 ## ESPHome Device
 
@@ -150,7 +145,7 @@ This project makes use of:
 1. [Waveshare 7.5inch e-Ink Raw Display](https://www.amazon.com/dp/B075R69T93).
 2. [Waveshare Universal e-Paper Raw Panel Driver Board](https://www.amazon.com/dp/B07M5CNP3B).
 
-It is worth mentioning that [Waveshare site](https://www.waveshare.com/product/) has updated their product catalog, and these are no longer available directly.
+It's worth mentioning that [Waveshare site](https://www.waveshare.com/product/) has updated their product catalog, and these devices are no longer available directly.
 
 The closest ones are:
 - [Display](https://www.waveshare.com/product/displays/e-paper/epaper-1/7.5inch-e-paper.htm)
@@ -195,41 +190,9 @@ I hope it isn't.
 
 ESP32 devices can be very temperamental when it comes to ESPHome flashing. One way around is to connect the soon-to-be-flashed device directly to the ESPHome Host.
 
-Since my host is a Proxmox LXC, I needed a USB passthrough to the container. If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main)
+Since my host is a Proxmox LXC, I needed a USB passthrough to the container. If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#haesphome).
 
-If you did, just plug in the device and go. And if that worked, just [skip ahead](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#programming-the-display)
-
-If for some reason it didn't, you can try the following:
-
-Go to your web browser and type your Proxmox VE IP address, with port 8006.
-
-If you have a typical network address, this should look like `https://192.168.1.X:8006`.
-
-Once in your PVE environment, go to the PVE shell and type `lsusb`. You should get something like this:
-
-![Image](https://github.com/user-attachments/assets/51111408-88cb-448f-9f42-8b8645c030e0)
-
-Notice the QinHeng device. This is my ESP32 driver board.
-
-```
-Bus 001 Device 002: ID 1a86:55d3 QinHeng Electronics USB Single Serial
-```
-
-Now go to your ESPHome container and go to *Resources -> Add -> Device Passthrough*.
-
-![Image](https://github.com/user-attachments/assets/069c07c7-b03e-47eb-97e0-2ca736c1e58a)
-
-On the dialog, type the info from your device where "dev" is the number of the device Bus (001), and "xyz" is the number of the device itself (002).
-
-![Image](https://github.com/user-attachments/assets/139d92ab-eb02-4888-b3e8-6598fb1be75a)
-
-You should now see something like this:
-
-![Image](https://github.com/user-attachments/assets/9d20faba-b4cf-4fa5-9153-1aaf0cc42276)
-
-If at this point you still don't have USB passthrough to your ESPHome Host, there is something else going on. Maybe a bad device, or a bad port, or something else. 
-
-I won't cover further troubleshooting here.
+Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#haesphome) section if you have furher issues.
 
 ### Programming the display
 
@@ -397,6 +360,40 @@ Click on them, then click on the cog in the upper right to go to settings, and t
 Upon enablement, Home Assistant can now automatically generate a QR code with the SSID and password needed to log into your guests network. At first, it will have whatever password you assigned to your network.
 
 However, your button entity will now enable you to create and apply a 20-char random password to your guest network without any work on your part. Just remember this is a fixed string, and there is nothing you can (easily) do to adapt it to better suit your needs.
+
+### I'm using a LXC for the ESPHome host, but I need more help my ESPHome device directly to it.
+
+Let's try forcing the passthrough.
+
+Go to your web browser and type your Proxmox VE IP address, with port 8006.
+
+If you have a typical network address, this should look like `https://192.168.1.X:8006`.
+
+Once in your PVE environment, go to the PVE shell and type `lsusb`. You should get something like this:
+
+![Image](https://github.com/user-attachments/assets/51111408-88cb-448f-9f42-8b8645c030e0)
+
+Notice the QinHeng device. This is my ESP32 driver board.
+
+```
+Bus 001 Device 002: ID 1a86:55d3 QinHeng Electronics USB Single Serial
+```
+
+Now go to your ESPHome container and go to *Resources -> Add -> Device Passthrough*.
+
+![Image](https://github.com/user-attachments/assets/069c07c7-b03e-47eb-97e0-2ca736c1e58a)
+
+On the dialog, type the info from your device where "dev" is the number of the device Bus (001), and "xyz" is the number of the device itself (002).
+
+![Image](https://github.com/user-attachments/assets/139d92ab-eb02-4888-b3e8-6598fb1be75a)
+
+You should now see something like this:
+
+![Image](https://github.com/user-attachments/assets/9d20faba-b4cf-4fa5-9153-1aaf0cc42276)
+
+If at this point you still don't have USB passthrough to your ESPHome Host, there is something else going on. Maybe a bad device, or a bad port.
+
+I won't cover further troubleshooting here.
 
 ## Bonus
 
