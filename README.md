@@ -500,6 +500,8 @@ Things I'm thinking of in no particular order:
 
     - I haven't constructed it so I don't have the sensor!
 
+- Expand this document ot include a Home Assistant Card to manage/monitor meaningful variables.
+
 - Rework the prevent_deep_sleep logic.
 
     - I've been testing it a lot and I don't think it is working like it should.
