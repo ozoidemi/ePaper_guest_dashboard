@@ -77,8 +77,6 @@ With that out of the way, let's dive into the details...
 
 My parents love to entertain people. They also love living in an area with limited cell coverage. And they also have no qualms about making their tech problems someone else's tech problems...
 
-So, when a guest comes around asking to "get wifi" (*\*\*shudders\*\**), guess who is now responsible to deal with the request...
-
 As such, this project has two goals
 - Present a device-agnostic response to non-tech visitors needing WAN access on a semi-isolated location.
 - Relieve any tech person in the vicinity from having to play the on-call tech support role in any way, shape, or form.
@@ -466,19 +464,21 @@ There are many ideas around how to present your screen. From handmade stands, to
 In my mind, this project would benefit from a stand like this:
 https://www.hackster.io/lmarzen/esp32-e-paper-weather-display-a2f444
 
-What I'd do differently though, is the USB-C connector. Instead of having it connected straight in the back, I would place the connector facing downwards - just like the power plug of a Sonos One speaker - with a 90-degree cable.
+What I'd do differently though, is the USB-C connector. Instead of having it connected straight in the back, I would either place the connector facing downwards - just like the power plug of a Sonos One speaker - with a 90-degree cable, or offset it into the base, at the bottom of it.
 
-That would hide the connector nicely, and would allow you to see a single straight cable coming from the bottom of the base. It you haven't seen it, I can tell you it looks super clean!
+That would hide the connector nicely. Guests would only see a single straight cable coming from the bottom of the base.
 
-The challenge with the approach is the length of the connector. If you are ever in the need to replace it, you might find it hard to find the same original one, or one with the same dimensions.
+If you haven't seen something like that, it looks super clean!
 
-With that in mind, a potential solution is to keep the connector straight, but move further into the base
+The challenge with the 90-degree connector approach might be the length of the connector. If you are ever in the need to replace it, you might find it hard to find the same original one, or one with the same dimensions. So it could become a pain.
 
-FYI: These pictures aren't mine. They are here just to illustrate the type of connector I'd use and why.
+From that perspective, an straight but offset connector at the bottom migth be the best bet. 
+
+FYI: These pictures aren't mine. They are here just to illustrate the kind of look I'd go for.
 
 ![Image](https://github.com/user-attachments/assets/2d5c4c79-645e-4da3-a7ba-aa9d328ff006)
 
-![Image](https://github.com/user-attachments/assets/7dabbb9d-426a-44e0-ab22-7767d7c1ba43)
+<img src="https://github.com/user-attachments/assets/7dabbb9d-426a-44e0-ab22-7767d7c1ba43" width=80% height=80%>
 
 ![Image](https://github.com/user-attachments/assets/917fc204-fbc2-4dfd-abe5-21a84617246e)
 
@@ -507,21 +507,20 @@ Things I'm thinking of in no particular order:
     - That needs much more attention than what I've given
  
 - Change the whole approach to use the existing (but removed) Unifi integration component!
- 
-And many more!
+
 
 ## References
 
 There are lots of comments, articles, projects, and tools that allowed me to develop this little solution. Either through inspiration, or problem solving. They are all worth taking a look at.
 
-** Inspiration **
+**Inspiration**
 - https://github.com/Madelena/esphome-weatherman-dashboard
 - https://github.com/maxmacstn/HA-ePaper-Display
 - https://github.com/DeastinY/esphome-waveshare-e-paper-dashboard
 - https://github.com/lmarzen/esp32-weather-epd
 - https://www.printables.com/model/994770-waveshare-75-e-ink-display-insert-for-ikea-rodalm/files
 
-** Tools **
+**Tools**
 - https://moqups.com/
 
     - Excellent tool to design this type of mockups
@@ -530,7 +529,7 @@ There are lots of comments, articles, projects, and tools that allowed me to dev
 
     - Seriously, incredibly easy to define templates with it.    
 
-** Problem Solving **
+**Problem Solving**
 - https://community.home-assistant.io/t/where-are-helpers-stored-when-created-in-the-gui/347556
 - https://pocketables.com/2022/01/how-to-format-that-wifi-qr-code-in-plain-text.html
 - https://tatham.blog/2021/02/06/esphome-batteries-deep-sleep-and-over-the-air-updates/
