@@ -1,15 +1,6 @@
 # Use this file if you DON'T have Unifi
 # Remember to ignore automations.yaml
 
-automation: !include automations.yaml
-
-# QR Code decoding integration
-image_processing:
-  - platform: qrcode
-    source:
-      - entity_id: camera.qrcode_image
-        name: qr_string
-
 input_select:
   # Language selector
   guest_display_language:
@@ -141,7 +132,7 @@ template:
       # Get SSID/Pass from Decoded QR string
       - name: "wifi_decoded_ssid"
         state: >-
-            {%- set qr = states('image_processing.qr_string') -%}
+            {%- set qr = states('sensor.qr_string') -%}
             {% if qr and 'WIFI:' in qr %}
                 {{ qr.split('S:')[1].split(';')[0] }}
             {% else %}
@@ -150,7 +141,7 @@ template:
 
       - name: "wifi_decoded_pass_part1"
         state: >-
-            {% set qr = states('image_processing.qr_string') %}
+            {% set qr = states('sensor.qr_string') %}
             {% if qr and 'WIFI:' in qr %}
                 {% set pass = qr.split('P:')[1].split(';')[0] %}
                 {{ pass[0:5] ~ ' ' ~ pass[5:10] }}
@@ -160,7 +151,7 @@ template:
 
       - name: "wifi_decoded_pass_part2"
         state: >-
-            {% set qr = states('image_processing.qr_string') %}
+            {% set qr = states('sensor.qr_string') %}
             {% if qr and 'WIFI:' in qr %}
                 {% set pass = qr.split('P:')[1].split(';')[0] %}
             {{ pass[10:15] ~ ' ' ~ pass[15:20] }}
