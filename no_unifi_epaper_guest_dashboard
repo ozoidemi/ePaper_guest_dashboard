@@ -1,0 +1,1284 @@
+# Pin Reference and text from manual\
+# https://www.waveshare.com/wiki/E-Paper_ESP32_Driver_Board#Pins
+
+# Pin 	ESP32 	Description
+# VCC 	3V3 	Power input (3.3V)
+# GND 	GND 	Ground
+# DIN 	P14 	SPI MOSI pin, data input
+# SCLK 	P13 	SPI CLK pin, clock signal input
+# CS  	P15 	Chip selection, low active
+# DC  	P27 	Data/command, low for commands, high for data
+# RST 	P26 	Reset, low active
+# BUSY 	P25 	Busy status output pin (means busy)
+
+# PS: The above is the board fixed connection, with no additional operation by the user. 
+
+substitutions:
+  # Display Pins
+  gpio_spi_clk_pin: "13"
+  gpio_spi_mosi_pin: "14"
+  gpio_cs_pin: "15"
+  gpio_dc_pin: "27"
+  gpio_reset_pin: "26"
+  gpio_busy_pin: "25"
+
+  # Display refresh in minutes
+  screen_refresh_timer: "5"
+  
+  # Guest SSID switch
+  # replace with your entity name
+  # typically switch.[guest_network_ssid] 
+  guest_ssid_switch: "switch.guests"
+
+globals:
+  # Enables optional string size calculations if users want to try out a different font size
+  - id: debug_print
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  
+  # QR Code size for placement calculations
+  - id: qr_size_sensor
+    type: int
+    restore_value: false
+    initial_value: "0"
+
+esphome:  
+  name: "${name}"
+  friendly_name: "${friendly_name}"
+  # Import canvas auxiliary values and structures
+  includes: 
+    - custom_components/canvas_struct.h
+  # Canvas Initialization
+  on_boot: 
+    - priority: 650
+      then:
+        - lambda: |-
+            // Calculate coordinates, widths, and heights
+            ESP_LOGD("Canvas Initialization", "Canvas initialization started...");
+            canvas.padding = 10;
+            canvas.bottom_trim = 20;
+            canvas.width = 800;
+            canvas.height = 480;
+            //
+            // Divides canvas in a 4x3 grid. Each cell equally sized
+            canvas.cell.width = (canvas.width - 2*canvas.padding)/canvas.columns_3;
+            canvas.cell.height = (canvas.height - canvas.bottom_trim - 2*canvas.padding)/canvas.rows_4;
+            //
+            ESP_LOGD("Canvas Initialization", "Screen size: %dx%d", canvas.width, canvas.height);
+            ESP_LOGD("Canvas Initialization", "Canvas cell dimensions: %dx%d", canvas.cell.width,
+                    canvas.cell.height);
+            //
+            ESP_LOGD("Canvas Sections", "Canvas subdivision creation initialized");
+            //
+            // Remember (x,y) defined as top left coordinates
+            // Time section
+            canvas.time.x = canvas.padding;
+            canvas.time.y = canvas.padding;
+            canvas.time.width = canvas.cell.width;
+            canvas.time.height = canvas.cell.height;
+            ESP_LOGD("Canvas Sections", "Time Section, x: %d, y: %d, width: %d, height: %d",
+                    canvas.time.x, canvas.time.y, canvas.time.width, canvas.time.height);
+            // QR section
+            // Calculate Wifi Off icon coordinates at center 
+            canvas.qr.x = canvas.padding;
+            canvas.qr.y = canvas.padding + canvas.cell.height;
+            canvas.qr.width = canvas.cell.width;
+            canvas.qr.height = 2*canvas.cell.height;
+            canvas.qr.x_wifi_off = canvas.qr.x + canvas.qr.width/2;
+            canvas.qr.y_wifi_off = canvas.qr.y + canvas.qr.height/2;
+            canvas.qr.scale_factor = 6; // 5 yields a QR that looks too small, 7, it looks too big for this setup.
+            //
+            // This assumes icon_wifi_on and icon_pass have the same size 
+            canvas.qr.icon_width = id(icon_wifi_on).get_width();
+            canvas.qr.icon_height = id(icon_wifi_on).get_height();
+            //
+            ESP_LOGD("Canvas Sections", "QR Section, x: %d, y: %d, width: %d, height: %d",
+                    canvas.qr.x, canvas.qr.y, canvas.qr.width, canvas.qr.height);
+            // Credentials section
+            canvas.credentials.x = canvas.padding;
+            canvas.credentials.y = canvas.padding + 3*canvas.cell.height;
+            canvas.credentials.width = canvas.cell.width;
+            canvas.credentials.height = canvas.cell.height;
+            ESP_LOGD("Canvas Sections", "Credentials Section, x: %d, y: %d, width: %d, height: %d",
+                    canvas.credentials.x, canvas.credentials.y, canvas.credentials.width,
+                    canvas.credentials.height);
+            // Date section
+            canvas.date.x = canvas.padding + canvas.cell.width;
+            canvas.date.y = canvas.padding;
+            canvas.date.width = 2*canvas.cell.width;
+            canvas.date.height = canvas.cell.height;
+            ESP_LOGD("Canvas Sections", "Date Section, x: %d, y: %d, width: %d, height: %d",
+                      canvas.date.x, canvas.date.y, canvas.date.width, canvas.date.height);
+            // Current Weather section
+            canvas.current_weather.x = canvas.padding + canvas.cell.width;
+            canvas.current_weather.y = canvas.padding + canvas.cell.height;
+            canvas.current_weather.width = canvas.cell.width;
+            canvas.current_weather.height = 3*canvas.cell.height;
+            ESP_LOGD("Canvas Sections", "Current Weather Section, x: %d, y: %d, width: %d, height: %d",
+                    canvas.current_weather.x, canvas.current_weather.y, canvas.current_weather.width,
+                    canvas.current_weather.height);
+            // Sunset section
+            canvas.forecast_sunset.x = canvas.padding + 2*canvas.cell.width;
+            canvas.forecast_sunset.y = canvas.padding + canvas.cell.height;
+            canvas.forecast_sunset.width = canvas.cell.width; 
+            canvas.forecast_sunset.height = canvas.cell.height;
+            ESP_LOGD("Canvas Sections", "Sunset Forecast Section, x: %d, y: %d, width: %d, height: %d",
+                    canvas.forecast_sunset.x, canvas.forecast_sunset.y, canvas.forecast_sunset.width,
+                    canvas.forecast_sunset.height);
+            // Forecast section
+            canvas.forecast_weather.x = canvas.padding + 2*canvas.cell.width;
+            canvas.forecast_weather.y = canvas.padding + 2*canvas.cell.height;
+            canvas.forecast_weather.width = canvas.cell.width;
+            canvas.forecast_weather.height = 2*canvas.cell.height;
+            ESP_LOGD("Canvas Sections", "Weather Forecast Section, x: %d, y: %d, width: %d, height: %d",
+                    canvas.forecast_weather.x, canvas.forecast_weather.y, canvas.forecast_weather.width,
+                    canvas.forecast_weather.height);
+            //
+            // Canvas initialized.
+            ESP_LOGD("Canvas Initialization", "Canvas Initialized.");      
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+deep_sleep:
+  id: deep_sleep_control
+  sleep_duration: 30s
+
+logger:
+  # Levels: min to max
+  # NONE
+  # ERROR
+  # WARN
+  # INFO
+  # DEBUG
+  # VERBOSE
+  # VERY_VERBOSE
+  #level: VERY_VERBOSE
+  
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret homeassistant_api_encryption_key
+
+# Over-The-Air updating
+ota:
+  - platform: esphome
+    password: !secret ota_update_password
+
+wifi:
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+  fast_connect: True
+  power_save_mode: HIGH
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: !secret wifi_ssid_fallback
+    password: !secret wifi_password_fallback
+
+captive_portal:  
+
+font:
+  # Using gfonts
+  # Family can be found by looking at the URL of a specific font after /specimen/.
+  # e.g., Garamond URL is https://fonts.google.com/specimen/EB+Garamond
+  # WiFi SSID
+  # Using entire glyph set
+  - file: 
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: roboto_ssid
+    size: 24
+
+  # WiFi Password
+  # Using entire glyph set
+  - file: 
+      type: gfonts
+      family: Roboto
+      weight: 400
+    id: roboto_pass
+    size: 24
+
+  # Forecast time
+  # Only glyphs needed to present time in hh:mm AM/PM format
+  - file: 
+      type: gfonts
+      family: Roboto
+      weight: 400
+    id: roboto_f_time
+    size: 22
+    glyphs: [':', ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'P', 'M']
+
+  # Date
+  - file: 
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: roboto_date
+    size: 42
+    glyphs: [' ', ',', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+            'G', 'H', 'I', 'J', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'a', 'b', 'c', 'd',
+            'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
+            'y', 'z', 'á', 'à', 'ä', 'é', 'è', 'í', 'ì', 'ñ', 'ó', 'ò', 'ú', 'ü', 'û']
+  
+  # Forecast temp
+  # only glyphs needed to present temp without decimal values
+  - file: 
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: roboto_f_temp
+    size: 32
+    glyphs: [' ', '°', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+  # Sunset Time
+  # Only glyphs needed to present time in hh:mm AM/PM format
+  - file: 
+      type: gfonts
+      family: Roboto
+      weight: 400
+    id: roboto_sunset_time
+    size: 32
+    glyphs: [' ', ':', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'P', 'M']
+
+  # Current data
+  # Only glyphs needed to present temperature, humidity as integers
+  # Notice UV index number representation is useless for most people
+  - file: 
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: roboto_current
+    size: 48
+    glyphs: [' ', '-', '%', '°', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', 'F', 'U', 'V']
+
+  # Time
+  # Only glyphs needed to present time in hh:mm AM/PM format, and '%', '°C/F'
+  - file: 
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: roboto_time_current
+    size: 56
+    # Current Screen Size -> Width: 244 pixels, Height: 66 pixels
+    glyphs: [' ', ':', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'P', 'M']
+  
+# images preferred over font simply due to size definition
+# Also found font images to be quite temperamental
+# Icon list can be found at https://pictogrammers.com/library/mdi/
+image:
+  # WiFi ON
+  - file: mdi:wifi
+    id: icon_wifi_on
+    resize: 30X30
+
+  # WiFi OFF
+  - file: mdi:wifi-off
+    id: icon_wifi_off
+    resize: 150X150
+
+  # Password
+  - file: mdi:key
+    id: icon_pass
+    resize: 30X30
+
+  # Temperature
+  - file: mdi:thermometer
+    id: icon_temp
+    resize: 70X70
+  
+  # Humidity
+  - file: mdi:water-outline
+    id: icon_humidity
+    resize: 70X70
+  
+  # Pool Temperature
+  - file: mdi:pool-thermometer
+    id: icon_pool_temp
+    resize: 70X70
+  
+  # UV index
+  - file: mdi:sun-wireless
+    id: icon_uv_index
+    resize: 70X70
+  
+  # Sunset
+  - file: mdi:weather-sunset
+    id: icon_weather_sunset
+    resize: 50x50
+  
+  # Weather Forecast Conditions
+  # see https://www.home-assistant.io/integrations/weather/ for condition mapping
+  # clear-night
+  - file: mdi:weather-night
+    id: icon_weather_night
+    resize: 50x50
+  
+  # cloudy
+  - file: mdi:weather-cloudy
+    id: icon_weather_cloudy
+    resize: 50x50
+      
+  # fog
+  - file: mdi:weather-fog
+    id: icon_weather_fog
+    resize: 50x50
+  
+  # hail
+  - file: mdi:weather-hail
+    id: icon_weather_hail
+    resize: 50x50
+  
+  # lightning
+  - file: mdi:weather-lightning
+    id: icon_weather_lightning
+    resize: 50x50
+  
+  # lightning-rainy
+  - file: mdi:weather-lightning-rainy
+    id: icon_weather_lightning_rainy
+    resize: 50x50
+  
+  # partlycloudy
+  - file: mdi:weather-partly-cloudy
+    id: icon_weather_partly_cloudy
+    resize: 50x50
+  
+  # pouring
+  - file: mdi:weather-pouring
+    id: icon_weather_pouring
+    resize: 50x50
+  
+  # rainy
+  - file: mdi:weather-rainy
+    id: icon_weather_rainy
+    resize: 50x50
+  
+  # snowy
+  - file: mdi:weather-snowy
+    id: icon_weather_snowy
+    resize: 50x50
+  
+  # snowy-rainy
+  - file: mdi:weather-snowy-rainy
+    id: icon_weather_snowy_rainy
+    resize: 50x50
+  
+  # sunny
+  - file: mdi:weather-sunny
+    id: icon_weather_sunny
+    resize: 50x50
+  
+  # windy
+  - file: mdi:weather-windy
+    id: icon_weather_windy
+    resize: 50x50
+  
+  # windy-variant (windy-cloudy)
+  - file: mdi:weather-windy-variant
+    id: icon_weather_windy_variant
+    resize: 50x50
+  
+  # exceptional
+  # exceptional has no clear mdi icon in store
+  - file: mdi:alert
+    id: icon_weather_exceptional
+    resize: 50x50
+  
+  # UV Index Representation
+  # All other represented by filled gauge
+  # UV Extreme (11+)
+  - file: mdi:alert-circle-outline
+    id: icon_uv_extreme
+    resize: 50x50
+
+time:
+  - platform: homeassistant
+    id: esptime
+    timezone: America/Santiago
+    on_time_sync:
+      - then:
+          - lambda: |-
+              if(id(esptime).now().is_valid()) {
+              ESP_LOGI("time", "Time has been set and is valid.");
+              } else {
+              ESP_LOGE("time", "Set time is invalid.");
+              }
+    
+    on_time:  
+      - seconds: 5
+        minutes: /$screen_refresh_timer
+        then: 
+          - lambda: |-
+              // Perform screen update
+              if (id(deep_sleep_activated).state) {
+                ESP_LOGI("time", "Deep Sleep Cycle...");
+              } else {
+                ESP_LOGI("time", "Screen updated");
+                id(epaper75_01).update();
+              }
+
+http_request:
+  verify_ssl: false
+
+sensor: 
+  # Current and forecasted weather data retrieved from Home Assistant
+  # Get current temperature
+  - platform: homeassistant
+    id: ha_temperature
+    entity_id: weather.forecast_home
+    attribute: temperature
+    internal: True
+    name: "Current Temperature"
+
+  # Get current humidity
+  - platform: homeassistant
+    id: ha_humidity
+    entity_id: weather.forecast_home
+    attribute: humidity
+    internal: True
+    name: "Current Humidity"
+
+  # Get current UV index (as number)
+  - platform: homeassistant
+    id: ha_uv_index
+    entity_id: weather.forecast_home
+    attribute: uv_index
+    internal: True
+    name: "Current UV Index Value"
+
+  # Forecasts
+  # Temperature sensors
+  # Temperature next hour
+  - platform: homeassistant
+    id: temp_1h
+    entity_id: sensor.forecast_temperature_1h
+    internal: True
+    name: "Temperature Forecast +1h"
+    on_value: 
+      then:
+        - lambda: |-
+            // Store sensor state in array for easy display printing
+            // data type: float
+            canvas.forecast_info.temp_h[0] = id(temp_1h).state;
+
+  # Temperature next two hours
+  - platform: homeassistant
+    id: temp_2h
+    entity_id: sensor.forecast_temperature_2h
+    internal: True
+    name: "Temperature Forecast +2h"
+    on_value: 
+      then:
+        - lambda: |-
+            // Store sensor state in array for easy display printing
+            // data type: float
+            canvas.forecast_info.temp_h[1] = id(temp_2h).state;
+
+  # Temperature next three hours
+  - platform: homeassistant
+    id: temp_3h
+    entity_id: sensor.forecast_temperature_3h
+    internal: True
+    name: "Temperature Forecast +3h"
+    on_value: 
+      then:
+        - lambda: |-
+            // Store sensor state in array for easy display printing
+            // data type: float
+            canvas.forecast_info.temp_h[2] = id(temp_3h).state;
+
+binary_sensor:
+  # Switch data retrieved from Home Assistant
+  # Identifies whether guest wifi is On/Off
+  - platform: homeassistant
+    id: wifi_status
+    entity_id: $guest_ssid_switch
+    internal: True
+    name: "WiFi On/Off"
+    on_state:
+      then:
+        - lambda: |-
+            // Perform screen update if it detects Wifi status change
+            id(epaper75_01).update();
+  
+  # Identifies whether Deep Sleep is On/Off
+  - platform: homeassistant
+    id: deep_sleep_activated
+    entity_id: binary_sensor.guest_display_deep_sleep_flag
+    internal: True
+    name: "Deep Sleep On/Off"
+    on_state:
+      then:
+        - lambda: |-
+            if(id(deep_sleep_activated).state) {
+              ESP_LOGI("Binary Sensor", "Deep Sleep flag is ON.");
+              id(epaper75_01).update();
+            } else {
+              ESP_LOGI("Binary Sensor", "Deep Sleep flag is OFF.");
+            }
+
+  # Disables Deep Sleep functionality
+  - platform: homeassistant
+    id: prevent_deep_sleep
+    entity_id: input_boolean.guest_display_prevent_deep_sleep
+    internal: True
+    on_state:
+      then:
+        - lambda: |-
+            if(id(prevent_deep_sleep).state && id(deep_sleep_activated).state) {
+              ESP_LOGI("Prevent Deep Sleep", "Prevent Deep Sleep is ON");
+              id(epaper75_01).update();
+            } else if (id(prevent_deep_sleep).state) {
+              ESP_LOGI("Prevent Deep Sleep", "Prevent Deep Sleep is ON");
+            } else {
+              ESP_LOGI("Prevent Deep Sleep", "Prevent Deep Sleep is OFF");
+            }
+            
+  # Activates/Disables Screen Padding (Outside Border)
+  - platform: homeassistant
+    id: canvas_padding_activated
+    entity_id: input_boolean.guest_display_border_flag
+    internal: True
+    on_state:
+      then:
+        - lambda: |-
+            if(id(canvas_padding_activated).state) {
+              ESP_LOGI("Canvas Paddding", "Canvas Padding is On");
+            } else {
+              ESP_LOGI("Canvas Paddding", "Canvas Padding is Off");
+            }
+            // Perform screen update
+            id(epaper75_01).update();
+
+  # Activates/Disables Screen Grid
+  - platform: homeassistant
+    id: grid_activated
+    entity_id: input_boolean.guest_display_grid_activated
+    internal: True
+    on_state:
+      then:
+        - lambda: |-
+            if(id(grid_activated).state) {
+              ESP_LOGI("Screen Grid", "Screen Grid is On");
+            } else {
+              ESP_LOGI("Screen Grid", "Screen Grid is Off");
+            }
+            // Perform screen update
+            id(epaper75_01).update();
+  
+  # Template Variables
+  # Display Initialization
+  #- platform: template
+  #  id: display_initialized
+  #  internal: True
+
+script:
+  # Deep Sleep Implementation
+  - id: consider_deep_sleep
+    mode: queued
+    then:
+      - delay: 10s
+      - if:
+          condition:
+            binary_sensor.is_on: prevent_deep_sleep
+          then:
+            - logger.log: 'Skipping sleep, per prevent_deep_sleep'
+          else:
+            - deep_sleep.enter: deep_sleep_control
+      - script.execute: consider_deep_sleep
+
+text_sensor:
+  # Set Up Screen Language Selection
+  - platform: homeassistant
+    id: screen_language
+    entity_id: input_select.guest_display_language
+    internal: True
+    name: "Screen Language Selection"
+    on_value: 
+      then:
+        - lambda: |-
+            ESP_LOGI("Screen Language", "Screen language set to %s.", id(screen_language).state.c_str());
+
+  # Date + Time current data retrieved from Home Assistant
+  # data type: std::string
+  # Retrieve Weekday
+  - platform: homeassistant
+    id: current_weekday
+    entity_id: sensor.current_weekday
+    internal: True
+    name: "Current Weekday"
+    
+  # Retrieve Formatted date
+  - platform: homeassistant
+    id: current_date
+    entity_id: sensor.current_date_formatted
+    internal: True
+    name: "Current Date Formatted"
+    on_value: 
+      then:
+        - lambda: |-
+            // Perform screen update
+            id(epaper75_01).update();
+  
+  # Retrieve Formatted time
+  - platform: homeassistant
+    id: current_time
+    entity_id: sensor.current_time_formatted
+    internal: True
+    name: "Current Time Formatted"
+  
+  # Forecast sensor data retrieved from Home Assistant
+  # data type: std::string
+  # Condition forecast, next hour
+  - platform: homeassistant
+    id: condition_1h
+    entity_id: sensor.forecast_condition_1h
+    internal: True
+    name: "Condition Forecast +1h"
+    on_value: 
+      then:
+        - lambda: |-
+            // Store sensor state in array for easy display printing
+            // array data type: std::string
+            canvas.forecast_info.condition_h[0] = id(condition_1h).state;
+
+  # Condition forecast, next two hours
+  - platform: homeassistant
+    id: condition_2h
+    entity_id: sensor.forecast_condition_2h
+    internal: True
+    name: "Condition Forecast +2h"
+    on_value: 
+      then:
+        - lambda: |-
+            // Store sensor state in array for easy display printing
+            // array data type: std::string
+            canvas.forecast_info.condition_h[1] = id(condition_2h).state;
+
+  # Condition forecast, next three hours
+  - platform: homeassistant
+    id: condition_3h
+    entity_id: sensor.forecast_condition_3h
+    internal: True
+    name: "Condition Forecast +3h"
+    on_value: 
+      then:
+        - lambda: |-
+            // Store sensor state in array for easy display printing
+            // array data type: std::string
+            canvas.forecast_info.condition_h[2] = id(condition_3h).state;
+            
+  # Time sensor data retrieved from Home Assistant
+  # data type: std::string  
+  # Time, next hour
+  - platform: homeassistant
+    id: time_1h
+    entity_id: sensor.forecast_datetime_1h
+    internal: True
+    name: "Time Next Hour"
+    on_value: 
+      then:
+        - lambda: |-
+            // Store sensor state in array for easy display printing
+            // array data type: std::string
+            canvas.forecast_info.time_h[0] = id(time_1h).state;
+
+  # Time, next two hours
+  - platform: homeassistant
+    id: time_2h
+    entity_id: sensor.forecast_datetime_2h
+    internal: True
+    name: "Time Next Two Hours"
+    on_value: 
+      then:
+        - lambda: |-
+            // Store sensor state in array for easy display printing
+            // array data type: std::string
+            canvas.forecast_info.time_h[1] = id(time_2h).state;
+
+  # Time, next three hours
+  - platform: homeassistant
+    id: time_3h
+    entity_id: sensor.forecast_datetime_3h
+    internal: True
+    name: "Time Next Three Hours"
+    on_value: 
+      then:
+        - lambda: |-
+            // Store sensor state in array for easy display printing
+            // array data type: std::string
+            canvas.forecast_info.time_h[2] = id(time_3h).state;
+  
+  # Sunset forecast    
+  - platform: homeassistant
+    id: ha_sunset
+    entity_id: sensor.sunset_time
+    internal: True
+    name: "Sun Setting Time Forecast"
+  
+  # Display Sleep mode message data retrieved from Home Assistant 
+  # Display sleep mode
+  - platform: homeassistant
+    id: sleep_message
+    entity_id: sensor.sleep_mode_message
+    internal: True
+    name: "Sleep Mode Message"
+  
+  # Retrieve parsed Wifi SSID string
+  - platform: homeassistant
+    id: wifi_qr_ssid
+    entity_id: sensor.wifi_decoded_ssid
+    internal: True
+    name: "Decoded WiFi SSID"
+    
+  # Retrieve parsed Wifi Password string 1
+  - platform: homeassistant
+    id: wifi_qr_pass_1
+    entity_id: sensor.wifi_decoded_pass_part1
+    internal: True
+    name: "Decoded WiFi Password Part 1"
+    
+  # Retrieve parsed Wifi Password string 2
+  - platform: homeassistant
+    id: wifi_qr_pass_2
+    entity_id: sensor.wifi_decoded_pass_part2
+    internal: True
+    name: "Decoded WiFi Password Part 2"
+
+  # Retrieve full QR Code String
+  - platform: homeassistant
+    id: wifi_qr_string
+    entity_id: sensor.qr_string
+    name: "Decoded WiFi QR string"
+    on_value:
+      then:
+        - lambda: |-
+            // Creates internal QR code using decoded QR info
+            wifi_qr_internal->set_value(id(wifi_qr_string).state.c_str());
+            // Gets QR size before updating display
+            uint8_t qr_size = wifi_qr_internal->get_size();
+            id(qr_size_sensor) = qr_size;
+            //
+            ESP_LOGD("QR Code", "QR Code size: %u", qr_size);
+            ESP_LOGD("QR Code", "QR Code info: %s", id(wifi_qr_string).state.c_str());
+            //
+            if (id(qr_size_sensor) > 0) {
+              id(epaper75_01).update();
+            }
+
+  # Internal QR code representation
+qr_code:
+  - id: wifi_qr_internal
+    value: .
+
+# pins required for the display
+spi:
+  clk_pin: $gpio_spi_clk_pin
+  mosi_pin: $gpio_spi_mosi_pin
+
+display:
+- platform: waveshare_epaper
+  id: epaper75_01
+  cs_pin:
+    number: $gpio_cs_pin
+    ignore_strapping_warning: True
+  dc_pin: $gpio_dc_pin
+  busy_pin:
+    number: $gpio_busy_pin
+    inverted: True
+  reset_pin: $gpio_reset_pin
+  model: 7.50inv2alt
+  reset_duration: 2ms
+  update_interval: never
+  lambda: |-
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //////////////// Auxiliary Coordinates & and multi-use variable definition ////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // variables reused across the entire screen printing process
+    int x0 = 0;
+    int y0 = 0;
+    int x1 = 0;
+    int y1 = 0;
+    int x2 = 0;
+    int y2 = 0;
+    int string_width, string_width1, string_width2, string_height, string_height1, string_height2, h, w;
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////                      Screen Printing                      ////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////                        Date + Time                        ////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ESP_LOGD("Date + Time Section", "Date + Time Printing Section Starts.");
+    // Helper function to calculate the in-screen text bounds to adjust font size.
+    if (id(debug_print)) {
+      // Time
+      id(epaper75_01).get_text_bounds(0, 0, id(current_time).state.c_str(), id(roboto_time_current),
+                                      TextAlign::LEFT, &x0, &y0, &string_width, &string_height);
+      // Log time dimensions
+      ESP_LOGD("TEXT_SIZE", "String: %s, Width: %d pixels, Height: %d pixels",
+              id(current_time).state.c_str(), string_width, string_height);
+      //
+      // Weekday
+      id(epaper75_01).get_text_bounds(0, 0, id(current_weekday).state.c_str(), id(roboto_date),
+                                      TextAlign::LEFT, &x0, &y0, &string_width1, &string_height1);
+      // Log weekday dimensions
+      ESP_LOGD("TEXT_SIZE", "String: %s, Width: %d pixels, Height: %d pixels",
+              id(current_weekday).state.c_str(), string_width1, string_height1);
+      //
+      // Date
+      id(epaper75_01).get_text_bounds(0, 0, id(current_date).state.c_str(), id(roboto_date),
+                                      TextAlign::LEFT, &x0, &y0, &string_width2, &string_height2);
+      // Log date dimensions
+      ESP_LOGD("TEXT_SIZE", "String: %s, Width: %d pixels, Height: %d pixels",
+              id(current_date).state.c_str(), string_width2, string_height2);
+    }
+    //
+    // Print time
+    it.printf(canvas.time.x + canvas.time.width/2, canvas.time.y + canvas.time.height/2,
+            id(roboto_time_current), TextAlign::CENTER, "%s", id(current_time).state.c_str());
+    //
+    // Log time print
+    ESP_LOGI("Time + Date Section", "Printed String: %s,  x: %d pixels, y: %d pixels, centered",
+            id(current_time).state.c_str(), canvas.time.x + canvas.time.width/2,
+            canvas.time.y + canvas.time.height/2);
+    //
+    // Print weekday
+    it.printf(canvas.date.x + canvas.date.width/2, canvas.date.y + canvas.date.height/2,
+                id(roboto_date), TextAlign::BOTTOM_CENTER, "%s", id(current_weekday).state.c_str());
+    //
+    // Log weekday print
+    ESP_LOGI("Time + Date Section", "Printed String: %s,  x: %d pixels, y: %d pixels, bottom centered",
+            id(current_weekday).state.c_str(), canvas.date.x + canvas.date.width/2,
+            canvas.date.y + canvas.date.height/2);
+    //
+    // Print date
+    it.printf(canvas.date.x + canvas.date.width/2, canvas.date.y + canvas.date.height/2,
+                id(roboto_date), TextAlign::TOP_CENTER, "%s", id(current_date).state.c_str());
+    //
+    // Log date print
+    ESP_LOGI("Time + Date Section", "Printed String: %s,  x: %d pixels, y: %d pixels, top centered",
+            id(current_date).state.c_str(), canvas.date.x + canvas.date.width/2,
+            canvas.date.y + canvas.date.height/2);
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////                   QR Code + Credentials                   ////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ESP_LOGD("QR Code + Credentials", "QR Code + Credentials Printing Section Starts.");
+    // QR code Setup
+    int qr_width = id(qr_size_sensor)*canvas.qr.scale_factor;
+    int qr_height = id(qr_size_sensor)*canvas.qr.scale_factor;
+    ESP_LOGD("QR Code + Credentials", "QR Height: %d, Width: %d.", qr_height, qr_width);
+    //
+    // Calculate QR location Coordinates at upper left
+    int x_qr = canvas.qr.x + (canvas.qr.width - qr_width)/2;
+    int y_qr = canvas.qr.y + (canvas.qr.height - qr_height)/2;
+    //
+    // Credentials setup
+    // Calculate string sizes for password lines
+    // Unifi's Integration imposes a 20 char long random password with upper and lower-case letters
+    // numbers, and symbols... I guess user experience wasn't relevant?...
+    // For readibility purposes, passwords were separated in four groups of five chars each
+    //
+    // Compare first and second password lines
+    // First line
+    id(epaper75_01).get_text_bounds(0, 0, id(wifi_qr_pass_1).state.c_str(), id(roboto_pass),
+                                    TextAlign::LEFT, &x1, &y1, &string_width1, &string_height1);
+    // Print String and log the dimensions
+    ESP_LOGD("Text size", "String: %s, Width: %d pixels, Height: %d pixels", id(wifi_qr_pass_1).state.c_str(), 
+            string_width1, string_height1);
+    //
+    //Second Line
+    id(epaper75_01).get_text_bounds(0, 0, id(wifi_qr_pass_2).state.c_str(), id(roboto_pass),
+                                    TextAlign::LEFT, &x1, &y1, &string_width2, &string_height2);
+    // Print String and log the dimensions
+    ESP_LOGD("Text size", "String: %s, Width: %d pixels, Height: %d pixels", id(wifi_qr_pass_2).state.c_str(),
+            string_width2, string_height2);
+    //
+    // Compare lenghts and keep the longest 
+    string_width1 = string_width1 > string_width2 ? string_width1 : string_width2;
+    ESP_LOGD("Text size", "Longer string, Width: %d pixels", string_width1);
+    //
+    // Calculate SSID/Pass coordinates at upper left
+    int x_ssid_pass = canvas.credentials.x + (canvas.credentials.width - string_width1 - canvas.qr.icon_width
+                                              - canvas.padding)/2;
+    int y_ssid_pass = canvas.credentials.y + (canvas.credentials.height - 3*canvas.qr.icon_height)/2;
+    //
+    // Print QR code and credentials if guest wifi is on, otherwise print wifi off icon
+    if (qr_width > 0 && qr_height > 0) {
+      if (id(wifi_status).state) {
+        if ((x_qr >= canvas.qr.x && x_qr <= canvas.qr.x + canvas.cell.width) &&
+            (y_qr >= canvas.qr.y && y_qr <= canvas.qr.y + canvas.cell.height)) {
+          it.qr_code(x_qr, y_qr, id(wifi_qr_internal), Color(255,255,255), canvas.qr.scale_factor);
+          it.image(x_ssid_pass, y_ssid_pass, id(icon_wifi_on));
+          it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + canvas.qr.icon_height/2,
+                  id(roboto_ssid), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_ssid).state.c_str());
+          it.image(x_ssid_pass, y_ssid_pass + canvas.qr.icon_height, id(icon_pass));
+          it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + 3*canvas.qr.icon_height/2,
+                  id(roboto_pass), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_pass_1).state.c_str());
+          it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + 5*canvas.qr.icon_height/2,
+                  id(roboto_pass), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_pass_2).state.c_str());
+          //
+          // Log print and dimension
+          ESP_LOGI("Image Location", "QR code printed at x: %d pixels, y: %d pixels", x_qr, y_qr);
+          ESP_LOGI("Image Location", "Wifi On icon printed at x: %d pixels, y: %d pixels", x_ssid_pass, y_ssid_pass);
+          ESP_LOGI("Image Location", "Pass icon printed at x: %d pixels, y: %d pixels", x_ssid_pass,
+                  y_ssid_pass + canvas.qr.icon_height);
+        }
+      } else {
+        it.image(canvas.qr.x_wifi_off, canvas.qr.y_wifi_off, id(icon_wifi_off), ImageAlign::CENTER);
+        // Log print
+        ESP_LOGD("Image Location", "Wifi off printed at x: %d pixels, y: %d pixels", canvas.qr.x_wifi_off,
+                canvas.qr.y_wifi_off);
+      }
+    }
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////                    Current Weather data                   ////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // https://www.who.int/news-room/questions-and-answers/item/radiation-the-ultraviolet-(uv)-index
+    ESP_LOGD("Current Weather", "Current Weather Printing Section Starts.");
+    //
+    // assumes all icons in this section have the same size
+    int icon_width_current_weather = id(icon_temp).get_width();
+    int icon_height_current_weather = id(icon_temp).get_height();
+    ESP_LOGD("Current Weather", "Icon size: %dx%d", icon_width_current_weather,
+            icon_height_current_weather);
+    //
+    // Subdivides the current weather section in three columns and fours rows
+    w = canvas.current_weather.width/3;
+    h = canvas.current_weather.height/4;
+    //
+    // Center all section icons in the middle of the first column on each row
+    it.image(canvas.current_weather.x + w/2, canvas.current_weather.y + h/2,
+            id(icon_temp), ImageAlign::CENTER);
+    it.image(canvas.current_weather.x + w/2, canvas.current_weather.y + 3*h/2,
+            id(icon_humidity), ImageAlign::CENTER);
+    it.image(canvas.current_weather.x + w/2, canvas.current_weather.y + 5*h/2,
+            id(icon_pool_temp), ImageAlign::CENTER);
+    //
+    // mdi has no good icon for UV index
+    // A proposed alternative to writing "UV" is the commented icon below
+    //it.image(canvas.current_weather.x + w/2, canvas.current_weather.y + 7*h/2,
+    //        id(icon_uv_index), ImageAlign::CENTER);
+    if (id(debug_print)) {
+      id(epaper75_01).get_text_bounds(0, 0, "UV", id(roboto_current),
+                                    TextAlign::CENTER, &x0, &y0, &string_width, &string_height);
+      ESP_LOGI("TEXT_SIZE", "String: UV, Width: %d pixels, Height: %d pixels", string_width, string_height); 
+    }
+    it.printf(canvas.current_weather.x + w/2, canvas.current_weather.y + 7*h/2,
+            id(roboto_current), TextAlign::CENTER, "UV");
+    // Log time dimensions
+    ESP_LOGI("TEXT SIZE", "UV icon space, height: %d pixels, width: %d pixels", h, 2*w);
+    //
+    // Log print and dimension
+    ESP_LOGD("Image Location", "Temp icon printed at x: %d pixels, y: %d pixels, centered",
+            canvas.current_weather.x + w/2, canvas.current_weather.y + h/2);
+    ESP_LOGD("Image Location", "Humidity icon printed at x: %d pixels, y: %d pixels, centered",
+            canvas.current_weather.x + w/2, canvas.current_weather.y + 3*h/2);
+    ESP_LOGD("Image Location", "Pool Temp icon printed at x: %d pixels, y: %d pixels, centered",
+            canvas.current_weather.x + w/2, canvas.current_weather.y + 5*h/2);
+    ESP_LOGD("Image Location", "UV icon/string printed at x: %d pixels, y: %d pixels, centered",
+            canvas.current_weather.x + w/2, canvas.current_weather.y + 7*h/2);
+    //
+    // Align and print all values to the right of the middle column at each row 
+    it.printf(canvas.current_weather.x + 2*w, canvas.current_weather.y + h/2,
+            id(roboto_current), TextAlign::CENTER_RIGHT, "%.0f", id(ha_temperature).state);
+    it.printf(canvas.current_weather.x + 2*w, canvas.current_weather.y + 3*h/2,
+            id(roboto_current), TextAlign::CENTER_RIGHT, "%.0f", id(ha_humidity).state);
+    //
+    //Since pool temp is a future implementation, I have it disabled for now
+    //it.printf(canvas.current_weather.x + 2*w, canvas.current_weather.y + 5*h/2,
+    //        id(roboto_current), TextAlign::CENTER_RIGHT, "%.0f", id(ha_pool_temp).state);
+    it.printf(canvas.current_weather.x + 2*w, canvas.current_weather.y + 5*h/2,
+            id(roboto_current), TextAlign::CENTER_RIGHT, "- -");
+    // Log print and dimension
+    ESP_LOGD("Current Weather", "Temp value %.0f printed at x: %d pixels, y: %d pixels, centered right",
+            id(ha_temperature).state, canvas.current_weather.x + 2*w, canvas.current_weather.y + h/2);
+    ESP_LOGD("Current Weather", "Humidity value %.0f printed at x: %d pixels, y: %d pixels, centered right",
+            id(ha_humidity).state, canvas.current_weather.x + 2*w, canvas.current_weather.y + 3*h/2);
+    //ESP_LOGD("Current Weather", "Pool temp value printed at x: %d pixels, y: %d pixels, centered right",
+    //        id(ha_humidity).state, canvas.current_weather.x + 2*w, canvas.current_weather.y + 5*h/2);
+    ESP_LOGD("Current Weather", "Pool temp value %s printed at x: %d pixels, y: %d pixels, centered right",
+            "- -", canvas.current_weather.x + 2*w, canvas.current_weather.y + 5*h/2);
+    //
+    // UV Printing
+    if (id(ha_uv_index).state < 1) {
+        it.filled_gauge(canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5, 3*h/5, h/5, 0);
+        ESP_LOGI("Current Weather", "UV Index ZERO printed at x: %d pixels, y: %d pixels",
+                canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5);
+    } else if ( 1 <= id(ha_uv_index).state && id(ha_uv_index).state < 2.5) {
+        it.filled_gauge(canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5, 3*h/5, h/5, 20);
+        ESP_LOGI("Current Weather", "UV Index LOW printed at x: %d pixels, y: %d pixels",
+                canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5);
+    } else if (2.5 <= id(ha_uv_index).state && id(ha_uv_index).state < 5.5) {
+        it.filled_gauge(canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5, 3*h/5, h/5, 50);
+        ESP_LOGI("Current Weather", "UV Index MODERATE printed at x: %d pixels, y: %d pixels",
+                canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5);
+    } else if (5.5 <= id(ha_uv_index).state && id(ha_uv_index).state < 7.5) {
+        it.filled_gauge(canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5, 3*h/5, h/5, 70);
+        ESP_LOGI("Current Weather", "UV Index HIGH printed at x: %d pixels, y: %d pixels",
+                canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5);
+    } else if (7.5 <= id(ha_uv_index).state && id(ha_uv_index).state < 10.5) {
+        it.filled_gauge(canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5, 3*h/5, h/5, 100);
+        ESP_LOGI("Current Weather", "UV Index VERY HIGH printed at x: %d pixels, y: %d pixels",
+                canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5);
+    } else {
+        it.filled_gauge(canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5, 3*h/5, h/5, 100);
+        auto white = Color(0, 0, 0);
+        it.filled_circle(canvas.current_weather.x + 2*w, canvas.current_weather.y + 7*h/2, 25, white);
+        it.image(canvas.current_weather.x + 2*w, canvas.current_weather.y + 7*h/2, id(icon_uv_extreme),
+          ImageAlign::CENTER);
+        ESP_LOGI("Current Weather", "UV Index image EXTREME printed at x: %d pixels, y: %d pixels",
+                canvas.current_weather.x + 2*w, canvas.current_weather.y + 19*h/5);
+    }
+    //
+    it.printf(canvas.current_weather.x + 5*w/2, canvas.current_weather.y + h/2,
+            id(roboto_current), TextAlign::CENTER, "°C");
+    it.printf(canvas.current_weather.x + 5*w/2, canvas.current_weather.y + 3*h/2,
+            id(roboto_current), TextAlign::CENTER, "%%");
+    it.printf(canvas.current_weather.x + 5*w/2, canvas.current_weather.y + 5*h/2,
+            id(roboto_current), TextAlign::CENTER, "°C");
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////                      Sunset Forecast                      ////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ESP_LOGD("Sunset forecast", "Sunset Forecast Printing Section Starts.");
+    //
+    id(epaper75_01).get_text_bounds(0, 0, id(ha_sunset).state.c_str(), id(roboto_sunset_time),
+                                    TextAlign::LEFT, &x1, &y1, &string_width1, &string_height1);
+    x0 = canvas.forecast_sunset.x + (canvas.forecast_sunset.width - id(icon_weather_sunset).get_width()
+                                    - string_width1 - canvas.padding)/2;
+    y0 = canvas.forecast_sunset.y + canvas.forecast_sunset.height/2;
+    //
+    it.image(x0, y0, id(icon_weather_sunset), ImageAlign::CENTER_LEFT);      
+    it.printf(x0 + id(icon_weather_sunset).get_width() + canvas.padding, y0, id(roboto_sunset_time),
+              TextAlign::CENTER_LEFT, "%s", id(ha_sunset).state.c_str());
+    //
+    ESP_LOGI("Sunset Forecast", "Printed String: %s", id(ha_sunset).state.c_str());
+    //
+    it.filled_rectangle(canvas.forecast_sunset.x + canvas.cell.width/10,
+                        canvas.forecast_sunset.y + canvas.cell.height - (canvas.padding - 1)/2,
+                        8*canvas.cell.width/10, canvas.padding/2); //Separator
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////                      Weather Forecast                     ////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ESP_LOGD("Weather forecast", "Weather Forecast Printing Section Starts.");
+    //
+    x0 = canvas.cell.width/3;
+    y0 = canvas.cell.height;
+    //
+    // Capture condition image id
+    for (int i = 0; i < 3; i++) {
+      if (canvas.forecast_info.condition_h[i] == "clear-night") {        
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_night), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "cloudy") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_cloudy), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "fog") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_fog), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "hail") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_hail), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "lightning") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_lightning), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "lightning-rainy") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_lightning_rainy), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "partlycloudy") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_partly_cloudy), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "pouring") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_pouring), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "rainy") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_rainy), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "snowy") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_snowy), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "snowy-rainy") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_snowy_rainy), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "sunny") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_sunny), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "windy") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_windy), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "windy-variant") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_windy_variant), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      } else if (canvas.forecast_info.condition_h[i] == "exceptional") {
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
+                id(icon_weather_exceptional), ImageAlign::CENTER);
+        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
+                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
+                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      }
+      ESP_LOGD("Weather Forecast", "time_%dh: %s.", i+1, canvas.forecast_info.time_h[i].c_str());
+      ESP_LOGD("Weather Forecast", "temp_%dh: %.0f°", i+1, canvas.forecast_info.temp_h[i]);
+      ESP_LOGD("Weather Forecast", "Condition_%dh: %s.", i+1, canvas.forecast_info.condition_h[i].c_str());
+    }
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////                        Sleep Status                       ////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    if (id(deep_sleep_activated).state && !id(prevent_deep_sleep).state) {
+      ESP_LOGI("Sleep Mode Message", "Sleep Flag is: ON.");
+      it.printf(canvas.current_weather.x + canvas.cell.width/2,
+                canvas.current_weather.y + canvas.current_weather.height,
+                id(roboto_ssid), TextAlign::TOP_CENTER, "%s", id(sleep_message).state.c_str());
+      ESP_LOGI("Sleep Mode Message", "Sleep message: %s. Printed", id(sleep_message).state.c_str());
+    } else if (!id(deep_sleep_activated).state) {
+      ESP_LOGI("Sleep Mode Message", "Sleep flag is: OFF.");
+      ESP_LOGI("Sleep Mode Message", "Sleep message: %s. Received but not printed", id(sleep_message).state.c_str());
+    } else {
+      ESP_LOGI("Sleep Mode Message", "Sleep is being prevented.");
+      ESP_LOGI("Sleep Mode Message", "Sleep message: %s. Received but not printed", id(sleep_message).state.c_str());
+    }
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////                Surrounding border and grid                ////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ESP_LOGD("Surrounding Border + Grid", "Surrounding Border + Grid Printing Section Starts.");
+    //
+    if (id(canvas_padding_activated).state) {
+      // (x_0, y_0, width, height)
+      // Left hand border
+      it.filled_rectangle(0, 0, canvas.padding, canvas.height);
+      // Right hand border
+      it.filled_rectangle(canvas.width - canvas.padding, 0, canvas.padding, canvas.height);
+      // Top border
+      it.filled_rectangle(canvas.padding, 0, canvas.width - 2*canvas.padding, canvas.padding);
+      // Bottom border
+      it.filled_rectangle(canvas.padding, canvas.height - canvas.padding,
+                          canvas.width - 2*canvas.padding, canvas.padding);
+    }
+    ESP_LOGD("Surrounding Border", "Surrounding border drawn: %s",
+            id(canvas_padding_activated).state ? "True" : "False");
+    //
+    // Visual reference - Draws the borders around each canvas section if grid_activated flag is true.
+    if (id(grid_activated).state) {
+        ESP_LOGD("Canvas Grid", "Canvas grid printing activated");
+        it.rectangle(canvas.time.x, canvas.time.y, canvas.time.width, canvas.time.height);
+        it.rectangle(canvas.date.x, canvas.date.y, canvas.date.width, canvas.date.height);
+        it.rectangle(canvas.qr.x, canvas.qr.y, canvas.qr.width, canvas.qr.height);
+        it.rectangle(canvas.credentials.x, canvas.credentials.y, canvas.credentials.width,
+                    canvas.credentials.height);
+        it.rectangle(canvas.current_weather.x, canvas.current_weather.y,
+                    canvas.current_weather.width, canvas.current_weather.height);
+        it.rectangle(canvas.forecast_sunset.x, canvas.forecast_sunset.y,
+                    canvas.forecast_sunset.width, canvas.forecast_sunset.height);
+        it.rectangle(canvas.forecast_weather.x, canvas.forecast_weather.y,
+                    canvas.forecast_weather.width, canvas.forecast_weather.height);
+        //
+        // Draws subdivisions for current weather canvas section. Adjust accordingly
+        it.rectangle(canvas.current_weather.x + canvas.current_weather.width/3,
+                    canvas.current_weather.y, canvas.current_weather.width/3,
+                    canvas.current_weather.height);    
+        it.rectangle(canvas.current_weather.x, canvas.current_weather.y + canvas.current_weather.height/4,
+                    canvas.current_weather.width, canvas.current_weather.height/2);
+        it.line(canvas.current_weather.x, canvas.current_weather.y + canvas.current_weather.height/2,
+              canvas.current_weather.x + canvas.cell.width,
+              canvas.current_weather.y + canvas.current_weather.height/2);
+        ESP_LOGD("Canvas Grid", "Canvas grid drawn");
+    }
