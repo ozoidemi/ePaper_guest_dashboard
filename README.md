@@ -21,7 +21,7 @@
 
 ### Installation
 - [ ] Make sure to properly isolate your guest network through the Unifi Network app.
-    - [ ] This script will work right of the gate if your network SSID is "guests".
+    - [ ] This script will work right out of the gate if your network SSID is "guests".
 - [ ] Add the automation rules from the *automations.yaml* project file to your HA's `automations.yaml` file.
 - [ ] Declare all the entities from the *configuration.yaml* project file to your HA's `configuration.yaml` file.
 - [ ] Copy the `canvas_struct.h` header file to the project folder on your ESPHome Host.
