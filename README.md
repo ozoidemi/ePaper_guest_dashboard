@@ -1,5 +1,5 @@
 # Multi-language Guest Dashboard for ESPHome
-<img src="resources/overview.png" width=80% height=80%>
+<img src="/resources/overview.png" width=80% height=80%>
 
 ---
 
