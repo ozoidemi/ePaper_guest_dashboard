@@ -108,13 +108,11 @@ If you don't understand the risks involved, then do yourself a favor and **avoid
 
 #### Fact 2 out of 3
 
-The Unifi Network Integration team decided against having the network password stored into a sensor. There are very good reasons for this.
+The Unifi Network Integration team decided against having the network password stored into a sensor.
+
+There are very good reasons for this.
 
 In fact, at one point they had enabled this functionality, only to roll it back soon after due to security concerns. 
-
-That should be understood in two ways:
-1. Enabling a sensor to store a password will require some elbow grease.
-2. Don't mess with this if you don't fully understand what you are doing.
 
 #### Fact 3 out of 3
 
@@ -128,13 +126,13 @@ You should **DEFINITELY** know that the guy who developed the base QR code imple
 
 *Deservingly so?* Still perhaps.
 
-But what kind of person sees no issue in forcing users into dealing with a 20-char long random password if their devices can't read the QR? The kind that is not trained to think about users. Because users are guests. And they probably don't understand the concept of "guests". Because they have never had any.
+But what kind of person sees no issue in forcing users into dealing with a 20-char long random password if their devices can't read the QR?
 
 Moving on...
 
 **FINAL WARNING - If you decide to proceed, know that you are doing so at your own risk!**
 
-# Implementing the project
+# Detailed Implementation
 
 ## What are the prerequisites?
 
@@ -142,70 +140,6 @@ Moving on...
   - Home assistant should be running the Unifi Network integration
 - ESPHome host
 - Network infrastructure based on Unifi Network
-
-### What is my installation, you ask?
-
-#### HA/ESPHome
-
-A Lenovo Tiny running Proxmox 8. Everything else is built on top of it.
-
-You can find very detailed installation instructions on how to set this up [here](https://community.home-assistant.io/t/installing-home-assistant-os-using-proxmox-8/201835).
-
-If you haven't seen or used tteck's helper scripts before, please check out the amazing community managing [this project](https://github.com/community-scripts/ProxmoxVE) in his honor - he regretfully passed away in late 2024.
-
-Here is the [direct link](https://community-scripts.github.io/ProxmoxVE/scripts) to the actual scripts.
-
-At a minimum, make sure to run the following scripts post Proxmox installation.
-1. [Post VE Install](https://community-scripts.github.io/ProxmoxVE/scripts?id=post-pve-install)
-2. [Update Repo](https://community-scripts.github.io/ProxmoxVE/scripts?id=update-repo)
-3. [HAOS Installer](https://community-scripts.github.io/ProxmoxVE/scripts?id=haos-vm)
-4. [ESPHome Installer](https://community-scripts.github.io/ProxmoxVE/scripts?id=esphome)
-
-Notice that default options are typically all you need when going through the helper scripts... ***except*** when installing ESPHome.
-
-You see, there are cases in which you will need USB passthrough access to the LXC. And no matter what you do, you will not get it if you don't choose a _Privileged_ container type during set up.
-
-To do so, just choose the advanced settings when the installer prompts you.
-![Image](https://github.com/user-attachments/assets/5c41dfd7-b0d1-4d0c-a8c2-d71333cf7074)
-
-Then choose all the defaults, except for the container type, which should be privileged.
-![Image](https://github.com/user-attachments/assets/de530991-8717-4d6a-bf7d-6c2c9a157c31)
-
-#### Network
-
-Running a UXG-Pro with Unifi Network 9.0.114 on a local CK-Gen2. Also multiple U6+/U6 lite APs, and multiple USW-24-POE switches.
-
-My guest network isolates all devices from one another in the same VLAN, and prevents them from accessing any other VLANs.
-
-Ubiquiti provides some advice around [best practices for guest networks](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi).
-
-For the purposes of this project, we'll assume your guest network SSID is `guests`.
-
-### I have a Unifi Network infrastructure, but I don't have the integration.
-
-[Skip ahead](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#esphome-device) if this isn't your case and you have already activated the QR sensor.
-
-If it is, get the integration installed following the instructions on the Home Assistant Unifi Network integration [page](https://www.home-assistant.io/integrations/unifi/).
-
-Once the integration is up and running in HA, go to *Settings -> Devices & Services -> Entities*.
-
-On the search box, search for "guests" (remember? the guest network SSID we'd assume moving forward?).
-
-You will see a few entities here.
-- sensor.guests
-- switch.guests
-- image.guests_qr_code
-- button.guests_regenerate_password
-
-The latter two entities should be disabled if you haven't touch them.
-
-Click on them, then click on the cog in the upper right to go to settings, and then enable the entities.
-
-Upon enablement, Home Assistant can now automatically generate a QR code with the SSID and password needed to log into your guests network. At first, it will have whatever password you assigned to your network.
-
-However, your button entity will now enable you to create and apply a 20-char random password to your guest network without any work on your part. Just remember this is a fixed string, and there is nothing you can (easily) do to adapt it to better suit your needs.
-
-We'll still take advantage of these two entities later on.
 
 ## ESPHome Device
 
@@ -400,7 +334,72 @@ The first command writes a file of null bytes the typical size of your NVS, nami
 
 The second command writes the file on your ESPHome device at 0x009000, which is the typical location for the NVS file. Note that `/dev/ttyACM0` depends on your installation, and you will need to verify the rigth entry for your project.
 
+## Examples + Troubleshooting
+
+### What is my installation, you ask?
+
+#### HA/ESPHome
+
+A Lenovo Tiny running Proxmox 8. Everything else is built on top of it.
+
+You can find very detailed installation instructions on how to set this up [here](https://community.home-assistant.io/t/installing-home-assistant-os-using-proxmox-8/201835).
+
+If you haven't seen or used tteck's helper scripts before, please check out the amazing community managing [this project](https://github.com/community-scripts/ProxmoxVE) in his honor - he regretfully passed away in late 2024.
+
+Here is the [direct link](https://community-scripts.github.io/ProxmoxVE/scripts) to the actual scripts.
+
+At a minimum, make sure to run the following scripts post Proxmox installation.
+1. [Post VE Install](https://community-scripts.github.io/ProxmoxVE/scripts?id=post-pve-install)
+2. [Update Repo](https://community-scripts.github.io/ProxmoxVE/scripts?id=update-repo)
+3. [HAOS Installer](https://community-scripts.github.io/ProxmoxVE/scripts?id=haos-vm)
+4. [ESPHome Installer](https://community-scripts.github.io/ProxmoxVE/scripts?id=esphome)
+
+Notice that default options are typically all you need when going through the helper scripts... ***except*** when installing ESPHome.
+
+You see, there are cases in which you will need USB passthrough access to the LXC. And no matter what you do, you will not get it if you don't choose a _Privileged_ container type during set up.
+
+To do so, just choose the advanced settings when the installer prompts you.
+![Image](https://github.com/user-attachments/assets/5c41dfd7-b0d1-4d0c-a8c2-d71333cf7074)
+
+Then choose all the defaults, except for the container type, which should be privileged.
+![Image](https://github.com/user-attachments/assets/de530991-8717-4d6a-bf7d-6c2c9a157c31)
+
+#### Network
+
+Running a UXG-Pro with Unifi Network 9.0.114 on a local CK-Gen2. Also multiple U6+/U6 lite APs, and multiple USW-24-POE switches.
+
+My guest network isolates all devices from one another in the same VLAN, and prevents them from accessing any other VLANs.
+
+Ubiquiti provides some advice around [best practices for guest networks](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi).
+
+For the purposes of this project, we'll assume your guest network SSID is `guests`.
+
+### I have a Unifi Network infrastructure, but I don't have the integration.
+
+[Skip ahead](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#esphome-device) if this isn't your case and you have already activated the QR sensor.
+
+If it is, get the integration installed following the instructions on the Home Assistant Unifi Network integration [page](https://www.home-assistant.io/integrations/unifi/).
+
+Once the integration is up and running in HA, go to *Settings -> Devices & Services -> Entities*.
+
+On the search box, search for "guests" (remember? the guest network SSID we'd assume moving forward?).
+
+You will see a few entities here.
+- sensor.guests
+- switch.guests
+- image.guests_qr_code
+- button.guests_regenerate_password
+
+The latter two entities should be disabled if you haven't touch them.
+
+Click on them, then click on the cog in the upper right to go to settings, and then enable the entities.
+
+Upon enablement, Home Assistant can now automatically generate a QR code with the SSID and password needed to log into your guests network. At first, it will have whatever password you assigned to your network.
+
+However, your button entity will now enable you to create and apply a 20-char random password to your guest network without any work on your part. Just remember this is a fixed string, and there is nothing you can (easily) do to adapt it to better suit your needs.
+
 ## Bonus
+
 ### Presentation
 There are many ideas around how to present your screen. From handmade stands, to Ikea frames and everything in between.
 
