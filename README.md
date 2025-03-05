@@ -24,7 +24,8 @@
 - [ ] Add the automation rules from the *automations.yaml* project file to your HA's `automations.yaml` file.
 - [ ] Declare all the entities from the *configuration.yaml* project file to your HA's `configuration.yaml` file.
 - [ ] Copy the `canvas_struct.h` header file to the project folder on your ESPHome Host.
-- [ ] Load up the `epaper_guest_deshboard.yaml` file on your ESPHome driver board and install.
+- [ ] Load up the `epaper_guest_deshboard.yaml` file on your ESPHome driver board.
+- [ ] Adjust the substitutions, add the corresponding passwords to your `secrets.yaml` file, and install.
 
 #### Note that:
 1. MDIs are imported as images.
@@ -85,7 +86,7 @@ People who:
 3. Typically entertain friends and family.
 4. Would be comfortable managing a public WiFi network.
 
-If you are ok with those, please skip to [implementation details](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#Implementing-the-project).
+If you are ok with those, please skip to [implementation details](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#detailed-implementation).
 
 Otherwise, please read on.
 
@@ -130,7 +131,11 @@ You should **DEFINITELY** know that the guy who developed the base QR code imple
 
 *Deservingly so?* Still perhaps.
 
-But what kind of person sees no issue in shoving a 20-char long random password down their users' throat, when it is possible that users won't be able to use the QR in the first place?
+I still don't agree with shoving a 20-char long random password down my users' throat, when it is possible that the QR won't work for them in the first place.
+
+Besides, the password is already in plain text the moment its printed in a QR format, so...
+
+Moving on.
 
 **FINAL WARNING - If you decide to proceed, know that you are doing so at your own risk!**
 
@@ -186,32 +191,31 @@ At least for my HW revision, the wiki documentation works perfectly well.
 
 This could be as much fun as having a dentist appointment for a root canal while suffering from explosive diarrhea.
 
-I hope it isn't.
+I hope it isn't for you.
 
 ESP32 devices can be very temperamental when it comes to ESPHome flashing. One way around is to connect the soon-to-be-flashed device directly to the ESPHome Host.
 
-Since my host is a Proxmox LXC, I needed a USB passthrough to the container. If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#haesphome).
+Since my host is a Proxmox LXC, I needed a USB passthrough to the container.
+
+If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#haesphome).
 
 Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#haesphome) section if you have furher issues.
 
 ### Programming the display
 
-This involves adding yaml entries to HA (*configuration.yaml*, and *automations.yaml*), creating a header file within the ESPHome Host, and adding the ESPHome device yaml. 
-
 #### Home Assistant
 
 ##### Automations.yaml
 
-On the file editor, search for the `/homeassistant/automations.yaml` file and add the two entries from the automations.yaml project file.
+On HA's file editor, search for the `/homeassistant/automations.yaml` file and add the two entries from the automations.yaml project file.
 
 If you don't have the file editor, you can add it from the add-on store (*Settings -> Add-ons -> Add-on store*).
 
 Also, if you don't know exactly *where* to add these entries to the file, know that the file you are seeing is my entire automations file at this point. So you can just copy and paste its contents, or completely replace it via HA's file editor.
 
-The first part takes a snapshot of the QR code (`image.guests_qr_code`) and stores it in `/config/www/wifi_qr.png`.
+The first entry takes a snapshot of the QR code (`image.guests_qr_code`) and stores it in `/config/www/wifi_qr.png`.
 
 The second ensures that the guest network password is updated automatically at least weekly. If you need a different schedule, then adjust accordingly. It will not break anything, and you could easily remove it altogether.
-
 
 > **I don't get it... why are we taking a snapshot of a QR code that already exists?**
 >
@@ -225,23 +229,25 @@ The second ensures that the guest network password is updated automatically at l
 >
 > Unless you save the QR, you almost can't do anything with it. That's why I used the snapshot automation.
 
-
-**Configuration.yaml**
+#### Configuration.yaml
 
 Back into the file editor, go to `/homeassistant/configuration.yaml`.
 
-Here, add the contents of the *configuration.yaml* project file into your HA's `configuration.yaml` file.
+Here, load up all the entities into your HA's `configuration.yaml` file.
 
-These are:
+You should see the following entries, each with a differnet number of elements:
 
-1. The `image_processing` entry.
-2. The `input_select` entry.
-3. All the `template` elements.
+1. `image_processing`.
+2. `input_select`.
+3. `input_boolean`.
+4. `binary_sensor`.
+5. `template`.
 
-Make sure the spacing is correct to avoid weird errors. If you already have any of these sections, just append the new entries at the end of each section.
+If you already have any of these sections, just append the new entries at the end of each, and make sure to respect the spacing.
 
-This will create all the sensor entities that you'll need for ESPHome, and refresh all the data we'll be presenting on the Display.
+The file includes all the entities that you will need. Other than adding an icon to `guest_display_deep_sleep_flag`, you wont need to create nor modify any entities via the GUI.
 
+#### CLI
 The final step is to install `zbar-tools`, which are necessary for the [QR code integration](https://www.home-assistant.io/integrations/qrcode) to work.
 
 To do so, you need to get the Terminal add-on. Just go to *Settings -> Add-ons -> Add-on Store" and look for the Advanced SSH & Web Terminal.
@@ -252,13 +258,17 @@ Once its up, run the following command.
 apk add zbar
 ```
 
+THat should take care of it.
+
 ### ESPHome Host
 
 1. First go to the ESPHome host on PVE.
 2. Open the shell.
 3. Go to the `config/custom_components` directory. `cd config/custom_components`
-4. Create a new file called `canvas_struct.h'. You can use `nano canvas_struct.h`
-5. Paste the contents of the `canvas_struct.h' project file and save.
+4. Copy the `canvas_struct.h` into that directory.
+    5. If you don't know how to, you can:
+        6. Create a new file called `canvas_struct.h'. You can use `nano canvas_struct.h`
+        7. Paste the contents of the `canvas_struct.h' project file and save (ctrl + s, ctrl + x).
 
 You can quickly verify that the content of the file is correct using the `cat` command.
 ```
@@ -267,35 +277,24 @@ cat canvas_struct.h
 
 ### ESPHome Device
 
-Just load up the `epaper-guest-display.yaml` file onto your device's yaml. 
+Load up the `epaper-guest-display.yaml` file onto your device's yaml. 
 
 Make sure to update the following substitutions / relevant values at the beginning:
 
 1. Update `guest_ssid_switch: "switch.guests"` to match the SSID for your guest wifi.
-2. Adjust ln. 63 and 64 in case your screen wasn't 800x480 px. 
+2. Make sure to define the following entries on your `secrets.yaml` file:
+    3. `homeassistant_api_encryption_key` for your HA API.
+    4. `ota_update_password` for your OTA functionality.
+    5. `wifi_ssid` and `wifi_password` for your Wifi
+        - These define the wifi network your ESPHome device will connect to.
+        - They **MUST** be different from the credentials that will be displayed on your screen
+        - And they **MUST** be kept **completely confidential**.
+    7. `wifi_ssid_fallback` and `wifi_password_fallback` for your Fallback Hotspot.
+4. On the `esphome` entry, look at `on_boot` lambda. Make sure to adjust `canvas.width` and `canvas.height` if your screen isn't 800x480 px. 
 
-Then make sure to define these entries on your `secrets.yaml` file:
-   
-1. Define `homeassistant_api_encryption_key`.
-2. Define `ota_update_password`.
-3. Define `wifi_ssid` and `wifi_password`.
-    - These define the wifi network your ESPHome device will connect to. As such, these not only **SHOULD** be different from the credentials that will be displayed on your screen, but also should be kept **completely confidential**.
-4. Define `wifi_ssid_fallback` and `wifi_password_fallback` in case the wifi connection fails.
+Then just Install, kick back, and wait for the screen to retrieve and load up all the info you have.
 
-Then just Install, kick back and wait for the screen to retrieve and load up all the info you have.
-
-#### Note on ESP_ERR_NVS_NOT_ENOUGH_SPACE
-
-If during the compilation and programming of your ESPHome device, you ever get this NVS error, use the following commands.
-
-```
-dd if=/dev/zero of=nvs_zero bs=1 count=20480
-esptool.py --chip esp32 --port /dev/ttyACM0 write_flash 0x009000 nvs_zero
-```
-
-The first command writes a file of null bytes the typical size of your NVS, naming it nvs_zero.
-
-The second command writes the file on your ESPHome device at 0x009000, which is the typical location for the NVS file. Note that `/dev/ttyACM0` depends on your installation, and you will need to verify the rigth entry for your project.
+Congrats!
 
 ## Examples + Troubleshooting
 
@@ -395,9 +394,27 @@ If at this point you still don't have USB passthrough to your ESPHome Host, ther
 
 I won't cover further troubleshooting here.
 
+### I'm getting an ESP_ERR_NVS_NOT_ENOUGH_SPACE error!
+
+After multiple uploads, your device's Non Volatile Storage might need some housekeeping.
+
+If you ever get this NVS error during the compilation and programming of your ESPHome device, then use the following commands.
+
+```
+dd if=/dev/zero of=nvs_zero bs=1 count=20480
+esptool.py --chip esp32 --port /dev/ttyACM0 write_flash 0x009000 nvs_zero
+```
+
+The first command writes a file of null bytes the typical size of your NVS, naming it nvs_zero.
+
+The second command writes the file on your ESPHome device at 0x009000, which is the typical address for the NVS file.
+
+Note that `/dev/ttyACM0` depends on your installation, and you will need to verify the rigth entry for your project.
+
 ## Bonus
 
 ### Presentation
+
 There are many ideas around how to present your screen. From handmade stands, to Ikea frames and everything in between.
 
 In my mind, this project would benefit from a stand like this:
