@@ -1,5 +1,5 @@
 # Multi-language Guest Dashboard for ESPHome
-<img src="[https://github.com/user-attachments/assets/369b15c7-1a71-4c7f-b978-df97bad4e748](https://github-production-user-asset-6210df.s3.amazonaws.com/84427855/416411159-369b15c7-1a71-4c7f-b978-df97bad4e748.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20250305%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250305T045556Z&X-Amz-Expires=300&X-Amz-Signature=d316f92399513372e92c781a5272e45033d13e29dda2f3baac144af88a147f45&X-Amz-SignedHeaders=host)" width=80% height=80%>
+<img src="https://github-production-user-asset-6210df.s3.amazonaws.com/84427855/416411159-369b15c7-1a71-4c7f-b978-df97bad4e748.jpg" width=80% height=80%>
 
 ---
 
