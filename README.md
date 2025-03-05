@@ -46,7 +46,7 @@
 
    However, `binary_sensor.guest_display_deep_sleep_flag` does not support an `icon` option.
 
-   To add one, you'll have to do so via the GUI. e.g., `mdi:sleep`.
+   To add one, you'll have to do so via the GUI (e.g., `mdi:sleep`).
 
 And that's it.
 
