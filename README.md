@@ -23,7 +23,7 @@
 - [ ] Make sure to properly isolate your guest network through the Unifi Network app.
 - [ ] Add the automation rules from the *automations.yaml* project file to your HA's `automations.yaml` file.
 - [ ] Declare all the entities from the *configuration.yaml* project file to your HA's `configuration.yaml` file.
-- [ ] Copy the header file to the project folder on your ESPHome Host.
+- [ ] Copy the `canvas_struct.h` header file to the project folder on your ESPHome Host.
 - [ ] Load up the `epaper_guest_deshboard.yaml` file on your ESPHome driver board and install.
 
 #### Note that:
