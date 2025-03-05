@@ -474,7 +474,7 @@ The challenge with the 90-degree connector approach might be the length of the c
 
 From that perspective, an straight but offset connector at the bottom migth be the best bet. 
 
-FYI: These pictures aren't mine. They are here just to illustrate the kind of look I'd go for.
+FYI: These pictures aren't mine. They are here just to illustrate the kind of look I'd go after.
 
 ![Image](https://github.com/user-attachments/assets/2d5c4c79-645e-4da3-a7ba-aa9d328ff006)
 
