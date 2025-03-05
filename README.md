@@ -478,9 +478,9 @@ From that perspective, an straight but offset connector at the bottom migth be t
 
 FYI: These pictures aren't mine. They are here just to illustrate the kind of look I'd go after.
 
-![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/sonos_example1.jpg)
+![Image](/resources/sonos_example1.jpg)
 
-<img src="https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/sonos_example2.jpg" width=50% height=50%>
+<img src="/resources/sonos_example2.jpg" width=50% height=50%>
 
 ![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/sonos_example3.jpg)
 
