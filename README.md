@@ -479,7 +479,7 @@ rm -rf *
 
 **Be careful** with `rm -rf`. That's quite a dangerous command.
 
-This will force the ESPHome Host to start off with a clean slate - it will redownload and recompilate all of its platformio packages, this time with the right amount of space to succed.
+This will force the ESPHome Host to start off with a clean slate - it will redownload and recompilate all of its platformio packages, this time with the right amount of space to succeed.
 
 
 ### I'm getting an ESP_ERR_NVS_NOT_ENOUGH_SPACE error!
