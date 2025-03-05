@@ -275,41 +275,49 @@ image:
   # WiFi ON
   - file: mdi:wifi
     id: icon_wifi_on
+    type: BINARY
     resize: 30X30
 
   # WiFi OFF
   - file: mdi:wifi-off
     id: icon_wifi_off
+    type: BINARY
     resize: 150X150
 
   # Password
   - file: mdi:key
     id: icon_pass
+    type: BINARY
     resize: 30X30
 
   # Temperature
   - file: mdi:thermometer
     id: icon_temp
+    type: BINARY
     resize: 70X70
   
   # Humidity
   - file: mdi:water-outline
     id: icon_humidity
+    type: BINARY
     resize: 70X70
   
   # Pool Temperature
   - file: mdi:pool-thermometer
     id: icon_pool_temp
+    type: BINARY
     resize: 70X70
   
   # UV index
   - file: mdi:sun-wireless
     id: icon_uv_index
+    type: BINARY
     resize: 70X70
   
   # Sunset
   - file: mdi:weather-sunset
     id: icon_weather_sunset
+    type: BINARY
     resize: 50x50
   
   # Weather Forecast Conditions
@@ -317,77 +325,92 @@ image:
   # clear-night
   - file: mdi:weather-night
     id: icon_weather_night
+    type: BINARY
     resize: 50x50
   
   # cloudy
   - file: mdi:weather-cloudy
     id: icon_weather_cloudy
+    type: BINARY
     resize: 50x50
       
   # fog
   - file: mdi:weather-fog
     id: icon_weather_fog
+    type: BINARY
     resize: 50x50
   
   # hail
   - file: mdi:weather-hail
     id: icon_weather_hail
+    type: BINARY
     resize: 50x50
   
   # lightning
   - file: mdi:weather-lightning
     id: icon_weather_lightning
+    type: BINARY
     resize: 50x50
   
   # lightning-rainy
   - file: mdi:weather-lightning-rainy
     id: icon_weather_lightning_rainy
+    type: BINARY
     resize: 50x50
   
   # partlycloudy
   - file: mdi:weather-partly-cloudy
     id: icon_weather_partly_cloudy
+    type: BINARY
     resize: 50x50
   
   # pouring
   - file: mdi:weather-pouring
     id: icon_weather_pouring
+    type: BINARY
     resize: 50x50
   
   # rainy
   - file: mdi:weather-rainy
     id: icon_weather_rainy
+    type: BINARY
     resize: 50x50
   
   # snowy
   - file: mdi:weather-snowy
     id: icon_weather_snowy
+    type: BINARY
     resize: 50x50
   
   # snowy-rainy
   - file: mdi:weather-snowy-rainy
     id: icon_weather_snowy_rainy
+    type: BINARY
     resize: 50x50
   
   # sunny
   - file: mdi:weather-sunny
     id: icon_weather_sunny
+    type: BINARY
     resize: 50x50
   
   # windy
   - file: mdi:weather-windy
     id: icon_weather_windy
+    type: BINARY
     resize: 50x50
   
   # windy-variant (windy-cloudy)
   - file: mdi:weather-windy-variant
     id: icon_weather_windy_variant
+    type: BINARY
     resize: 50x50
   
   # exceptional
   # exceptional has no clear mdi icon in store
   - file: mdi:alert
     id: icon_weather_exceptional
+    type: BINARY
     resize: 50x50
   
   # UV Index Representation
@@ -395,6 +418,7 @@ image:
   # UV Extreme (11+)
   - file: mdi:alert-circle-outline
     id: icon_uv_extreme
+    type: BINARY
     resize: 50x50
 
 time:
