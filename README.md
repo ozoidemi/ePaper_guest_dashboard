@@ -54,7 +54,9 @@ And that's it.
 
 ### Hold on... Can I make this work without Unifi?
 
-Absolutely!
+Absolutely! Though the following code hasn't been fully tested.
+
+To try it out:
 
 1. **Ignore** the `automations.yaml` file.
 2. Use the files under the `no_unifi` directory.
