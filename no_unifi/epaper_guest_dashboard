@@ -24,11 +24,6 @@ substitutions:
 
   # Display refresh in minutes
   screen_refresh_timer: "5"
-  
-  # Guest SSID switch
-  # replace with your entity name
-  # typically switch.[guest_network_ssid] 
-  guest_ssid_switch: "switch.guests"
 
 globals:
   # Enables optional string size calculations if users want to try out a different font size
