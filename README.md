@@ -140,7 +140,7 @@ You should **DEFINITELY** know that the guy who developed the base QR code imple
 
 I just don't agree with shoving a 20-char long random password down my users' throat. Especially when it is possible that the QR won't work for them in the first place.
 
-Besides, the password is already in plain text the moment its printed in a QR format, so... meh.
+Besides, the password is already in plain text the moment it's printed in a QR format, so... meh.
 
 Moving on.
 
@@ -196,9 +196,9 @@ At least for my HW revision, the wiki documentation works perfectly well.
 
 ### Flashing the device
 
-This could be as much fun as having a dentist appointment for a root canal while suffering from explosive diarrhea.
+This could be as fun as having a dentist appointment for a root canal while suffering from explosive diarrhea.
 
-I hope it isn't for you.
+Hopefully your fun won't be of *that* kind.
 
 ESP32 devices can be very temperamental when it comes to ESPHome flashing. One way around is to connect the soon-to-be-flashed device directly to the ESPHome Host.
 
@@ -224,7 +224,7 @@ The first entry takes a snapshot of the QR code (`image.guests_qr_code`) and sto
 
 The second ensures that the guest network password is updated automatically at least weekly. If you need a different schedule, then adjust accordingly. It will not break anything, and you could easily remove it altogether.
 
-> **I don't get it... why are we taking a snapshot of a QR, storing and decoding it, and then sending the decoded info to ESPHome so that it can be rebuilt from scratch? Can't we just pass over the existing QR and be done with it?**
+> **I don't get why this is so convoluted. Can't we just pass over the existing QR and be done with it?**
 >
 > Not really, no.
 > 
@@ -370,7 +370,13 @@ To do so, just choose the advanced settings when the installer prompts you.
 
 ![Image](/resources/pve_advanced.png)
 
-Then choose all the defaults, except for the container type, which should be privileged.
+Then choose all the defaults, except for the disk size and the container type.
+
+For the disk sie, you should allocate a minimum of 8GB, instead of the default 4GB.
+
+![Image](/resources/pve_disk_size.png)
+
+ For the container type, simply choose "privileged".
 
 ![Image](/resources/pve_privileged.png)
 
@@ -406,9 +412,9 @@ Upon enablement, Home Assistant can now automatically generate a QR code with th
 
 However, your button entity will now enable you to create and apply a 20-char random password to your guest network without any work on your part. Just remember this is a fixed string, and there is nothing you can (easily) do to adapt it to better suit your needs.
 
-### I'm using a LXC for the ESPHome host, but I need more help my ESPHome device directly to it.
+### I'm using a LXC for the ESPHome host, but I need more help to connect my ESPHome device directly to it.
 
-Let's try forcing the passthrough.
+Let's try forcing the USB passthrough.
 
 Go to your web browser and type your Proxmox VE IP address, with port 8006.
 
@@ -439,6 +445,42 @@ You should now see something like this:
 If at this point you still don't have USB passthrough to your ESPHome Host, there is something else going on. Maybe a bad device, or a bad port.
 
 I won't cover further passthrough troubleshooting here.
+
+### For the love of all that's sacred, I cannot make this work using the `esp-idf` esphome framework type.
+
+This one is a pain.
+
+First, make sure that your ESPHome hosts has at least 8GB of disk space. I found the hard way that 4GB is simply not enought to download and compile all the platformio packages needed for this framework type.
+
+If your ESPHome doesn't have the minimum 8GB, and you are using PVE, you can add the extra disk as follows:
+
+Follow the same instructions above to login into your PVE environment, and click on your ESPHome LXC.
+
+Go to *Resources -> Root Disk*.
+
+![Image](/resources/pve_root_disk.png)
+
+thenk Click on *Volume Action -> Resize*.
+
+![Image](/resources/pve_volume_resize.png)
+
+Finally type in the amount of disk you want to **add**. So if you already had 4GB, you should type in "4" to get to the 8GB you want.
+
+![Image](/resources/pve_resize_dialog.png)
+
+Reboot your LXC for good hygiene and you'll be ready for the next step.
+
+Now go to your ESPHome LXC console, go to your platformio directory, and ruthlessly erase all of its contents. The platformio directory is hidden so, unless you are using `ls -la` on your root directory, you won't see it.
+
+```
+cd ~/.platformio
+rm -rf *
+```
+
+**Be careful** with `rm -rf`. That's quite a dangerous command.
+
+This will force the ESPHome Host to start off with a clean slate - it will redownload and recompilate all of its platformio packages, this time with the right amount of space to succed.
+
 
 ### I'm getting an ESP_ERR_NVS_NOT_ENOUGH_SPACE error!
 
