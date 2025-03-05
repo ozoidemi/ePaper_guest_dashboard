@@ -51,6 +51,8 @@
 
 And that's it.
 
+---
+
 ### Hold on... Can I make this work without Unifi?
 
 Absolutely! Though, the following code hasn't been tested.
@@ -60,7 +62,8 @@ To try it out:
 1. **Ignore** the `automations.yaml` file.
 2. Use the files under the `no_unifi` directory.
 3. In `secrets.yaml` replace `your_ssid` and `your_password` with your own.
-    Remember to use a 20-char long password. 
+    - Remember to use a 20-char long password.
+    - Also remember this is the HA's `secrets.yaml` file.
 
 ---
 
@@ -131,9 +134,9 @@ You should **DEFINITELY** know that the guy who developed the base QR code imple
 
 *Deservingly so?* Still perhaps.
 
-I still don't agree with shoving a 20-char long random password down my users' throat, when it is possible that the QR won't work for them in the first place.
+I just don't agree with shoving a 20-char long random password down my users' throat. Especially when it is possible that the QR won't work for them in the first place.
 
-Besides, the password is already in plain text the moment its printed in a QR format, so...
+Besides, the password is already in plain text the moment its printed in a QR format, so... meh.
 
 Moving on.
 
@@ -197,9 +200,9 @@ ESP32 devices can be very temperamental when it comes to ESPHome flashing. One w
 
 Since my host is a Proxmox LXC, I needed a USB passthrough to the container.
 
-If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#haesphome).
+If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#privileged-container-type).
 
-Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#haesphome) section if you have furher issues.
+Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#troubleshooting) section if you have furher issues, or want to know more about my own installation.
 
 ### Programming the display
 
@@ -250,7 +253,9 @@ The file includes all the entities that you will need. Other than adding an icon
 #### CLI
 The final step is to install `zbar-tools`, which are necessary for the [QR code integration](https://www.home-assistant.io/integrations/qrcode) to work.
 
-To do so, you need to get the Terminal add-on. Just go to *Settings -> Add-ons -> Add-on Store" and look for the Advanced SSH & Web Terminal.
+To do so, just use the Terminal add-on.
+
+If you don't have it already, then go to *Settings -> Add-ons -> Add-on Store" and look for the Advanced SSH & Web Terminal.
 
 Once its up, run the following command.
 
@@ -258,14 +263,14 @@ Once its up, run the following command.
 apk add zbar
 ```
 
-THat should take care of it.
+That should be it from the Home Assistant side.
 
 ### ESPHome Host
 
-1. First go to the ESPHome host on PVE.
-2. Open the shell.
-3. Go to the `config/custom_components` directory. `cd config/custom_components`
-4. Copy the `canvas_struct.h` into that directory.
+1. First open the CLI on your ESPHome host.
+    - For me, that means getting to my PVE console, selecting the LXC container, and then opening the console for the container.
+4. Go to the `config/custom_components` directory. `cd config/custom_components`
+5. Copy the `canvas_struct.h` into that directory.
     5. If you don't know how to, you can:
         6. Create a new file called `canvas_struct.h'. You can use `nano canvas_struct.h`
         7. Paste the contents of the `canvas_struct.h' project file and save (ctrl + s, ctrl + x).
@@ -274,6 +279,8 @@ You can quickly verify that the content of the file is correct using the `cat` c
 ```
 cat canvas_struct.h
 ```
+
+Two down. One more to go.
 
 ### ESPHome Device
 
@@ -294,9 +301,9 @@ Make sure to update the following substitutions / relevant values at the beginni
 
 Then just Install, kick back, and wait for the screen to retrieve and load up all the info you have.
 
-Congrats!
+And Congrats! you should now have a functional display to present to your guests!
 
-## Examples + Troubleshooting
+## Troubleshooting
 
 ### What is my installation, you ask?
 
@@ -318,6 +325,7 @@ At a minimum, make sure to run the following scripts post Proxmox installation.
 
 Notice that default options are typically all you need when going through the helper scripts... ***except*** when installing ESPHome.
 
+#### Privileged Container Type
 You see, there are cases in which you will need USB passthrough access to the LXC. And no matter what you do, you will not get it if you don't choose a _Privileged_ container type during set up.
 
 To do so, just choose the advanced settings when the installer prompts you.
