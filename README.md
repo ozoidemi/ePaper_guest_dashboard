@@ -26,7 +26,7 @@
 - [ ] Declare all the entities from the *configuration.yaml* project file to your HA's `configuration.yaml` file.
 - [ ] Copy the `canvas_struct.h` header file to the project folder on your ESPHome Host.
 - [ ] Load up the `epaper_guest_deshboard.yaml` file on your ESPHome driver board.
-- [ ] Adjust the substitutions, add the corresponding passwords to your `secrets.yaml` file, and install.
+- [ ] Adjust the substitutions, add the corresponding passwords to your ESPHome's `secrets.yaml` file, and install.
 - [ ] Create the HA dashboard so that you can enable/disable the wireless network, monitor users, or tweak the dimensions.
 
 #### Note that:
