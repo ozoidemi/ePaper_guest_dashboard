@@ -1,3 +1,5 @@
+# Use this file if you have Unifi
+
 automation: !include automations.yaml
 
 # QR Code decoding integration
