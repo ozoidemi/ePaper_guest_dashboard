@@ -368,11 +368,11 @@ You see, there are cases in which you will need USB passthrough access to the LX
 
 To do so, just choose the advanced settings when the installer prompts you.
 
-![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/pve_advanced.png)
+![Image](/resources/pve_advanced.png)
 
 Then choose all the defaults, except for the container type, which should be privileged.
 
-![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/pve_privileged.png)
+![Image](/resources/pve_privileged.png)
 
 #### Network
 
@@ -416,7 +416,7 @@ If you have a typical network address, this should look like `https://192.168.1.
 
 Once in your PVE environment, go to the PVE shell and type `lsusb`. You should get something like this:
 
-![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/pve_lsusb.png)
+![Image](/resources/pve_lsusb.png)
 
 Notice the QinHeng device. This is my ESP32 driver board.
 
@@ -426,15 +426,15 @@ Bus 001 Device 002: ID 1a86:55d3 QinHeng Electronics USB Single Serial
 
 Now go to your ESPHome container and go to *Resources -> Add -> Device Passthrough*.
 
-![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/esphome_device_passthrough.png)
+![Image](/resources/esphome_device_passthrough.png)
 
 On the dialog, type the info from your device where "dev" is the number of the device Bus (001), and "xyz" is the number of the device itself (002).
 
-![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/esphome_device_path.png)
+![Image](/resources/esphome_device_path.png)
 
 You should now see something like this:
 
-![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/esphome_device_summary.png)
+![Image](/resources/esphome_device_summary.png)
 
 If at this point you still don't have USB passthrough to your ESPHome Host, there is something else going on. Maybe a bad device, or a bad port.
 
@@ -482,7 +482,7 @@ FYI: These pictures aren't mine. They are here just to illustrate the kind of lo
 
 <img src="/resources/sonos_example2.jpg" width=50% height=50%>
 
-![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/sonos_example3.jpg)
+![Image](/resources/sonos_example3.jpg)
 
 ## TODO
 
