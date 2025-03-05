@@ -22,7 +22,7 @@ input_select:
 
 input_boolean:
   # Helpers - configuration and functional variables
-  guest_display_border:
+  guest_display_border_flag:
     name: "guest_display_border_flag"
     icon: "mdi:border-outside"
     
