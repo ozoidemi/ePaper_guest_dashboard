@@ -478,7 +478,7 @@ FYI: These pictures aren't mine. They are here just to illustrate the kind of lo
 
 ![Image](https://github.com/user-attachments/assets/2d5c4c79-645e-4da3-a7ba-aa9d328ff006)
 
-<img src="https://github.com/user-attachments/assets/7dabbb9d-426a-44e0-ab22-7767d7c1ba43" width=80% height=80%>
+<img src="https://github.com/user-attachments/assets/7dabbb9d-426a-44e0-ab22-7767d7c1ba43" width=50% height=50%>
 
 ![Image](https://github.com/user-attachments/assets/917fc204-fbc2-4dfd-abe5-21a84617246e)
 
