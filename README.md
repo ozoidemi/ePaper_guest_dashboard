@@ -277,11 +277,15 @@ That should be all from the Home Assistant side.
 
 1. First open the CLI on your ESPHome host.
     - For me, that means getting to my PVE console, selecting the LXC container, and then opening the console for the container.
-4. Go to the `config/custom_components` directory. `cd config/custom_components`
-5. Copy the `canvas_struct.h` into that directory.
-    5. If you don't know how to, you can:
-        6. Create a new file called `canvas_struct.h'. For that, simply use the command `nano canvas_struct.h`
-        7. Paste the contents of the `canvas_struct.h' project file and save (ctrl + s, ctrl + x).
+2. Go to the `config/custom_components` directory.
+    - `cd config/custom_components`
+3. Copy the `canvas_struct.h` into that directory.
+    - If you don't know how to, you can:
+        - Create a new file called `canvas_struct.h'.
+            
+            For that, simply use the command `nano canvas_struct.h`
+
+        - Paste the contents of the `canvas_struct.h' project file and save (ctrl + s, ctrl + x).
 
 You can quickly verify that the content of the file is correct using the `cat` command.
 
