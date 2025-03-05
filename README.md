@@ -48,48 +48,18 @@
 
    To add one, you'll have to do so via the GUI. e.g., `mdi:sleep`.
 
-Well, that's it. Stan's dead. Good night.\*
+And that's it.
 
 ---
 
 ### Hold on... Can I make this work without Unifi?
-Absolutely. You'll need to modify the `configuration.yaml` and `epaper-guest-dashboard.yaml` files.
 
-#### HA modifications:
-1. **Don't add** the automations to your `automations.yaml` file.
-2. Create a template sensor (e.g., `sensor.qr_string`) and manually build up your credentials.   
-    - The format is: `WIFI:T:WPA;S:<SSID>;P:<PASS>;;`
-      - Where \<SSID\> is your network's name...
-      - ...and \<PASS\> is your network's password.
-      - Use 20-char long passwords to keep the display format.
-        
-        ```
-        # secrets.yaml
-        wifi_ssid: ssid
-        wifi_password: password
-        ```
-        
-        ```
-        # configuration.yaml
-        template
-          - sensors:
-              - name: "wifi_ssid"
-                state: !secret wifi_ssid
-        
-              - name: "wifi_password"
-                state: !secret wifi_password
-        
-              - name: "qr_string"
-                state: >-
-                  WIFI:T:WPA;S:{{states('sensor.wifi_ssid')}};P:{{states('sensor.wifi_password')}};;
-        ```
+Absolutely!
 
-4. Search for `image_processing.qr_string` on the project's `configuration.yaml`...
-5. ... and replace all occurrences using the sensor name you created. e.g., `sensor.qr_string`.
-
-#### ESPHome modifications:
-1. Find `entity_id: image_processing.qr_string` on the `epaper-guest-dashboard.yaml` file.
-2. Replace it with the entity created on HA - `entity_id: sensor.qr_string`
+1. **Ignore** the `automations.yaml` file.
+2. Use the fles under the `no_unifi` directory, instead.
+3. In `secrets.yaml` replace `your_ssid` and `your_password` with your own.
+    Remember to use a 20-char long password. 
 
 With that out of the way, let's dive into the details...
 
