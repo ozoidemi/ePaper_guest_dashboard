@@ -895,8 +895,8 @@ display:
     int y_ssid_pass = canvas.credentials.y + (canvas.credentials.height - 3*canvas.qr.icon_height)/2;
     //
     // Print QR code and credentials if a valid code exists
-    if ((qr_width > 0 && qr_height > 0) && (canvas.qr.x <= x_qr && x_qr <= canvas.qr.x + canvas.cell.width) &&
-      (canvas.qr.y <= y_qr && y_qr <= canvas.qr.y + canvas.cell.height)) {
+    if ((qr_width > 0 && qr_height > 0) && (canvas.qr.x <= x_qr && x_qr + qr_width <= canvas.qr.x + canvas.cell.width) &&
+      (canvas.qr.y <= y_qr && y_qr + qr_height <= canvas.qr.y + canvas.cell.height)) {
       it.qr_code(x_qr, y_qr, id(wifi_qr_internal), Color(255,255,255), canvas.qr.scale_factor);
       it.image(x_ssid_pass, y_ssid_pass, id(icon_wifi_on));
       it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + canvas.qr.icon_height/2,
