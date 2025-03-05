@@ -324,17 +324,21 @@ Make sure to update the following substitutions / relevant values at the beginni
 
         - These define the wifi network your ESPHome device will connect to.
 
-        - They **MUST** be different from the credentials that will be displayed on your screen
+        - This is NOT your guest wifi!
 
-        - And they **MUST** be kept **completely confidential**.
+        - The credentials **MUST** be different from the credentials that will be displayed on your screen.
+
+        - Also, they **MUST** be kept **completely confidential**.
 
     4. `wifi_ssid_fallback` and `wifi_password_fallback` for your Fallback Hotspot.
 
-3. On the `esphome` entry, look at `on_boot` lambda. Make sure to adjust `canvas.width` and `canvas.height` if your screen isn't 800x480 px. 
+3. On the `esphome` entry, look at the `on_boot` lambda.
 
-Then just Install, kick back, and wait for the screen to retrieve and load up all the info you have.
+    - Make sure to adjust `canvas.width` and `canvas.height` if your screen isn't 800x480 px. 
 
-And Congrats! you should now have a functional display to present to your guests!
+Then just install, kick back, and wait for the screen to retrieve and load up all the info you have.
+
+Congrats! you should now have a functional display to present to your guests!
 
 ## Troubleshooting
 
@@ -359,12 +363,15 @@ At a minimum, make sure to run the following scripts post Proxmox installation.
 Notice that default options are typically all you need when going through the helper scripts... ***except*** when installing ESPHome.
 
 #### Privileged Container Type
+
 You see, there are cases in which you will need USB passthrough access to the LXC. And no matter what you do, you will not get it if you don't choose a _Privileged_ container type during set up.
 
 To do so, just choose the advanced settings when the installer prompts you.
+
 ![Image](https://github.com/user-attachments/assets/5c41dfd7-b0d1-4d0c-a8c2-d71333cf7074)
 
 Then choose all the defaults, except for the container type, which should be privileged.
+
 ![Image](https://github.com/user-attachments/assets/de530991-8717-4d6a-bf7d-6c2c9a157c31)
 
 #### Network
@@ -377,11 +384,9 @@ Ubiquiti provides some advice around [best practices for guest networks](https:/
 
 For the purposes of this project, we'll assume your guest network SSID is `guests`.
 
-### I have a Unifi Network infrastructure, but I don't have the integration.
+### My Network infrastructure is based on Unifi, but I don't have the integration.
 
-[Skip ahead](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#esphome-device) if this isn't your case and you have already activated the QR sensor.
-
-If it is, get the integration installed following the instructions on the Home Assistant Unifi Network integration [page](https://www.home-assistant.io/integrations/unifi/).
+You can install it by following the instructions on the Home Assistant Unifi Network integration [page](https://www.home-assistant.io/integrations/unifi/).
 
 Once the integration is up and running in HA, go to *Settings -> Devices & Services -> Entities*.
 
@@ -395,7 +400,7 @@ You will see a few entities here.
 
 The latter two entities should be disabled if you haven't touch them.
 
-Click on them, then click on the cog in the upper right to go to settings, and then enable the entities.
+To enable them, click on the entity, then click on the cog in the upper right to go to settings, and then enable the entities. Repeat for the second one.
 
 Upon enablement, Home Assistant can now automatically generate a QR code with the SSID and password needed to log into your guests network. At first, it will have whatever password you assigned to your network.
 
@@ -433,11 +438,11 @@ You should now see something like this:
 
 If at this point you still don't have USB passthrough to your ESPHome Host, there is something else going on. Maybe a bad device, or a bad port.
 
-I won't cover further troubleshooting here.
+I won't cover further passthrough troubleshooting here.
 
 ### I'm getting an ESP_ERR_NVS_NOT_ENOUGH_SPACE error!
 
-After multiple uploads, your device's Non Volatile Storage might need some housekeeping.
+After multiple uploads, your device's Non-Volatile Storage might need some housekeeping.
 
 If you ever get this NVS error during the compilation and programming of your ESPHome device, then use the following commands.
 
@@ -446,7 +451,7 @@ dd if=/dev/zero of=nvs_zero bs=1 count=20480
 esptool.py --chip esp32 --port /dev/ttyACM0 write_flash 0x009000 nvs_zero
 ```
 
-The first command writes a file of null bytes the typical size of your NVS, naming it nvs_zero.
+The first command writes a file of null bytes (the typical size of your NVS), naming it nvs_zero.
 
 The second command writes the file on your ESPHome device at 0x009000, which is the typical address for the NVS file.
 
@@ -476,3 +481,63 @@ FYI: These pictures aren't mine. They are here just to illustrate the type of co
 ![Image](https://github.com/user-attachments/assets/7dabbb9d-426a-44e0-ab22-7767d7c1ba43)
 
 ![Image](https://github.com/user-attachments/assets/917fc204-fbc2-4dfd-abe5-21a84617246e)
+
+## TODO
+
+As the first half-decent version, I still have a lot of work to do in this implementation.
+
+Things I'm thinking of in no particular order:
+
+- Clean up the code.
+
+    - There is more flexibility than it is needed, so the code can be difficult to follow.
+
+    - Lots of unused variables, or poorly defined ones (looking at you canvas_struct.h!).
+      
+- Rework the prevent_deep_sleep logic.
+
+    - I've been testing it a lot and I don't think it is working like it should.
+
+- Stream-line the ESP messages.
+
+    - Talking about a mess... There is no consistency whatsoever, and many messages are repeated.
+
+- Fully test the **no-unifi** version.
+
+    - That needs much more attention than what I've given
+ 
+- Change the whole approach to use the existing (but removed) Unifi integration component!
+ 
+And many more!
+
+## References
+
+There are lots of comments, articles, projects, and tools that allowed me to develop this little solution. Either through inspiration, or problem solving. They are all worth taking a look at.
+
+** Inspiration **
+- https://github.com/Madelena/esphome-weatherman-dashboard
+- https://github.com/maxmacstn/HA-ePaper-Display
+- https://github.com/DeastinY/esphome-waveshare-e-paper-dashboard
+- https://github.com/lmarzen/esp32-weather-epd
+- https://www.printables.com/model/994770-waveshare-75-e-ink-display-insert-for-ikea-rodalm/files
+
+** Tools **
+- https://moqups.com/
+
+    - Excellent tool to design this type of mockups
+
+- claude.ai
+
+    - Seriously, incredibly easy to define templates with it.    
+
+** Problem Solving **
+- https://community.home-assistant.io/t/where-are-helpers-stored-when-created-in-the-gui/347556
+- https://pocketables.com/2022/01/how-to-format-that-wifi-qr-code-in-plain-text.html
+- https://tatham.blog/2021/02/06/esphome-batteries-deep-sleep-and-over-the-air-updates/
+- https://community.home-assistant.io/t/astimezone-output-differs-from-server-local-time-zone/850071/2
+- https://community.home-assistant.io/t/error-unable-to-import-component-image-on-e-paper-display/712496/5
+- https://community.home-assistant.io/t/updated-automating-unifi-wifi-ssid-password-changes-and-qr-code-generation/380616/87
+- https://community.home-assistant.io/t/unifi-network-integration-official-thread/486308/79
+- https://community.home-assistant.io/t/definitive-guide-to-weather-integrations/736419
+
+Among many others!
