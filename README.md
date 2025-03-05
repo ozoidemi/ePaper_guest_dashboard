@@ -368,11 +368,11 @@ You see, there are cases in which you will need USB passthrough access to the LX
 
 To do so, just choose the advanced settings when the installer prompts you.
 
-![Image](https://github.com/user-attachments/assets/5c41dfd7-b0d1-4d0c-a8c2-d71333cf7074)
+![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/pve_advanced.png)
 
 Then choose all the defaults, except for the container type, which should be privileged.
 
-![Image](https://github.com/user-attachments/assets/de530991-8717-4d6a-bf7d-6c2c9a157c31)
+![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/pve_privileged.png)
 
 #### Network
 
@@ -416,7 +416,7 @@ If you have a typical network address, this should look like `https://192.168.1.
 
 Once in your PVE environment, go to the PVE shell and type `lsusb`. You should get something like this:
 
-![Image](https://github.com/user-attachments/assets/51111408-88cb-448f-9f42-8b8645c030e0)
+![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/pve_lsusb.png)
 
 Notice the QinHeng device. This is my ESP32 driver board.
 
@@ -426,15 +426,15 @@ Bus 001 Device 002: ID 1a86:55d3 QinHeng Electronics USB Single Serial
 
 Now go to your ESPHome container and go to *Resources -> Add -> Device Passthrough*.
 
-![Image](https://github.com/user-attachments/assets/069c07c7-b03e-47eb-97e0-2ca736c1e58a)
+![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/esphome_device_passthrough.png)
 
 On the dialog, type the info from your device where "dev" is the number of the device Bus (001), and "xyz" is the number of the device itself (002).
 
-![Image](https://github.com/user-attachments/assets/139d92ab-eb02-4888-b3e8-6598fb1be75a)
+![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/esphome_device_path.png)
 
 You should now see something like this:
 
-![Image](https://github.com/user-attachments/assets/9d20faba-b4cf-4fa5-9153-1aaf0cc42276)
+![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/esphome_device_summary.png)
 
 If at this point you still don't have USB passthrough to your ESPHome Host, there is something else going on. Maybe a bad device, or a bad port.
 
@@ -478,11 +478,11 @@ From that perspective, an straight but offset connector at the bottom migth be t
 
 FYI: These pictures aren't mine. They are here just to illustrate the kind of look I'd go after.
 
-![Image](https://github.com/user-attachments/assets/2d5c4c79-645e-4da3-a7ba-aa9d328ff006)
+![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/sonos_example1.jpg)
 
-<img src="https://github.com/user-attachments/assets/7dabbb9d-426a-44e0-ab22-7767d7c1ba43" width=50% height=50%>
+<img src="https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/sonos_example2.jpg" width=50% height=50%>
 
-![Image](https://github.com/user-attachments/assets/917fc204-fbc2-4dfd-abe5-21a84617246e)
+![Image](https://github.com/ozoidemi/ePaper_guest_dashboard/blob/main/resources/sonos_example3.jpg)
 
 ## TODO
 
