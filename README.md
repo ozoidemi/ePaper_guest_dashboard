@@ -285,9 +285,9 @@ That should be all from the Home Assistant side.
    cd config/custom_components
    ```
 
-3. Copy the `canvas_struct.h` into that directory.
+3. Copy the `canvas_struct.h` file into that directory.
     
-    - If you don't know how to, you can:
+    - If you don't know how, you can:
         
         - Create a new file called `canvas_struct.h'.
             
@@ -295,7 +295,8 @@ That should be all from the Home Assistant side.
           nano canvas_struct.h
           ```
 
-        - Paste the contents of the `canvas_struct.h' project file and save (ctrl + s, ctrl + x).
+        - Paste the contents of the `canvas_struct.h' project file.
+        - And save (ctrl + s, ctrl + x).
 
 4. Verify that the content of the file is correct using the `cat` command.
 
@@ -313,14 +314,14 @@ Make sure to update the following substitutions / relevant values at the beginni
 
 1. Update `guest_ssid_switch: "switch.guests"` to match the SSID for your guest wifi.
 2. Make sure to define the following entries on your `secrets.yaml` file:
-    3. `homeassistant_api_encryption_key` for your HA API.
-    4. `ota_update_password` for your OTA functionality.
-    5. `wifi_ssid` and `wifi_password` for your Wifi
+    1. `homeassistant_api_encryption_key` for your HA API.
+    2. `ota_update_password` for your OTA functionality.
+    3. `wifi_ssid` and `wifi_password` for your Wifi
         - These define the wifi network your ESPHome device will connect to.
         - They **MUST** be different from the credentials that will be displayed on your screen
         - And they **MUST** be kept **completely confidential**.
-    7. `wifi_ssid_fallback` and `wifi_password_fallback` for your Fallback Hotspot.
-4. On the `esphome` entry, look at `on_boot` lambda. Make sure to adjust `canvas.width` and `canvas.height` if your screen isn't 800x480 px. 
+    4. `wifi_ssid_fallback` and `wifi_password_fallback` for your Fallback Hotspot.
+3. On the `esphome` entry, look at `on_boot` lambda. Make sure to adjust `canvas.width` and `canvas.height` if your screen isn't 800x480 px. 
 
 Then just Install, kick back, and wait for the screen to retrieve and load up all the info you have.
 
