@@ -546,5 +546,6 @@ There are lots of comments, articles, projects, and tools that allowed me to dev
 - https://community.home-assistant.io/t/updated-automating-unifi-wifi-ssid-password-changes-and-qr-code-generation/380616/87
 - https://community.home-assistant.io/t/unifi-network-integration-official-thread/486308/79
 - https://community.home-assistant.io/t/definitive-guide-to-weather-integrations/736419
+- https://www.reddit.com/r/Esphome/comments/1iwroxi/esphome_github_and_licensing/
 
 Among many others!
