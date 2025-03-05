@@ -30,6 +30,28 @@ substitutions:
   # typically switch.[guest_network_ssid] 
   guest_ssid_switch: "switch.guests"
 
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret homeassistant_api_encryption_key
+
+# Over-The-Air updating
+ota:
+  - platform: esphome
+    password: !secret ota_update_password
+
+wifi:
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+  fast_connect: True
+  power_save_mode: HIGH
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: !secret wifi_ssid_fallback
+    password: !secret wifi_password_fallback
+
 globals:
   # Enables optional string size calculations if users want to try out a different font size
   - id: debug_print
@@ -158,28 +180,6 @@ logger:
   # VERY_VERBOSE
   #level: VERY_VERBOSE
   
-# Enable Home Assistant API
-api:
-  encryption:
-    key: !secret homeassistant_api_encryption_key
-
-# Over-The-Air updating
-ota:
-  - platform: esphome
-    password: !secret ota_update_password
-
-wifi:
-  networks:
-    - ssid: !secret wifi_ssid
-      password: !secret wifi_password
-  fast_connect: True
-  power_save_mode: HIGH
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: !secret wifi_ssid_fallback
-    password: !secret wifi_password_fallback
-
 captive_portal:  
 
 font:
