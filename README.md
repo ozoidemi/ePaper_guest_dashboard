@@ -57,7 +57,7 @@ And that's it.
 Absolutely!
 
 1. **Ignore** the `automations.yaml` file.
-2. Use the fles under the `no_unifi` directory, instead.
+2. Use the files under the `no_unifi` directory.
 3. In `secrets.yaml` replace `your_ssid` and `your_password` with your own.
     Remember to use a 20-char long password. 
 
