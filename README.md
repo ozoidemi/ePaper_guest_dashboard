@@ -344,14 +344,14 @@ Congrats! you should now have a functional display to present to your guests!
 
 ## I don't get why this is so convoluted. Can't we just pass over the existing QR and be done with it?
 
-Regretfully, no.
+Maybe? Regretfully I didn't another way.
  
 Even when the UI Network Integration generates a QR code for us automatically, it:
 
 1. Only exists in memory.
 2. Is much harder to use than what you might think.
 
-I won't go into all the details. The bottom line is that, unless you save the QR, you almost can't do anything with it.
+I won't go into all the details, except for saying that I did NOT find a way to use the in-memory QR without storing it.
 
 If you want to try a different approach, you can implement a custom component using the rolled back PR from the UI Network Integration - this project is publicly available.
 
