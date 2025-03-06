@@ -217,7 +217,7 @@ ESP32 devices can be very temperamental when it comes to ESPHome flashing. One w
 
 Since my host is a Proxmox LXC, I needed a USB passthrough to the container.
 
-If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#privileged-container-and-disk-size).
+If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#privileged-container-type-and-disk-size).
 
 Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#troubleshooting) section if you want to know more about my own installation, or if you need further assistance.
 
