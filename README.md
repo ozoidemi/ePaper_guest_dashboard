@@ -101,11 +101,7 @@ People who:
 
 If you are ok with those, please skip to [implementation details](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#detailed-implementation).
 
-Otherwise, please read on.
-
-If you have trouble figuring out how (or even *why*) should you isolate all your client devices on your guest network, or if setting up VLANs and creating Firewall rules sounds like a hassle to you... Well, I really hope you learn about them one day because you are missing out.
-
-Until then, please know that the downside of implementing this project far outweighs any gains that you could ever get from it.
+Otherwise, please know that the downside of implementing this project far outweighs any gains that you could ever get from it.
 
 Seriously.
 
