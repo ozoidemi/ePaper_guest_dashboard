@@ -512,6 +512,9 @@ Note that `/dev/ttyACM0` depends on your installation, and you will need to veri
 There are many ideas around how to present your screen. From handmade stands, to Ikea frames and everything in between.
 
 In my mind, this project would benefit from a stand like this:
+
+![Image](/resources/stand.png)
+
 https://www.hackster.io/lmarzen/esp32-e-paper-weather-display-a2f444
 
 What I'd do differently though, is the USB-C connector. Instead of having it connected straight in the back, I would either place the connector facing downwards - just like the power plug of a Sonos One speaker - with a 90-degree cable, or offset it into the base, at the bottom of it.
