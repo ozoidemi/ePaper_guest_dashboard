@@ -85,6 +85,8 @@ To try it:
 
 With that out of the way, let's dive into the details...
 
+
+
 ## Project Details
 
 ### What is the purpose of this project?
@@ -156,6 +158,8 @@ Moving on.
 
 **FINAL WARNING - If you decide to proceed, know that you are doing so at your own risk!**
 
+
+
 # Detailed Implementation
 
 ## ESPHome Device
@@ -213,7 +217,7 @@ ESP32 devices can be very temperamental when it comes to ESPHome flashing. One w
 
 Since my host is a Proxmox LXC, I needed a USB passthrough to the container.
 
-If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#privileged-container-type).
+If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#privileged-container-and-disk-size).
 
 Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#troubleshooting) section if you want to know more about my own installation, or if you need further assistance.
 
@@ -333,9 +337,11 @@ Then just install, kick back, and wait for the screen to retrieve and load up al
 
 Congrats! you should now have a functional display to present to your guests!
 
-## Troubleshooting
 
-### I don't get why this is so convoluted. Can't we just pass over the existing QR and be done with it?
+
+# Troubleshooting
+
+## I don't get why this is so convoluted. Can't we just pass over the existing QR and be done with it?
 
 Regretfully, no.
  
@@ -348,9 +354,9 @@ I won't go into all the details, but the bottom line is that, unless you save th
 
 If you want to try a different approach, you can implement a custom component using the rolled back PR from the UI Network Integration - that's publicly available.
 
-### What is my installation, you ask?
+## What is my installation, you ask?
 
-#### HA/ESPHome
+### HA/ESPHome
 
 A Lenovo Tiny running Proxmox 8. Everything else is built on top of it.
 
@@ -368,7 +374,7 @@ At a minimum, make sure to run the following scripts post Proxmox installation.
 
 Notice that default options are typically all you need when going through the helper scripts... ***except*** when installing ESPHome.
 
-#### Privileged Container Type
+#### Privileged Container Type and Disk Size
 
 There are cases in which you'll need USB passthrough access to the LXC. If you don't choose a _Privileged_ container type during set up, you won't get it.
 
@@ -386,7 +392,7 @@ For the container type, simply choose "privileged".
 
 ![Image](/resources/pve_privileged.png)
 
-#### Network
+### Network
 
 Running a UXG-Pro with Unifi Network 9.0.114 on a local CK-Gen2. Also multiple U6+/U6 lite APs, and multiple USW-24-POE switches.
 
@@ -396,7 +402,7 @@ Ubiquiti provides some advice around [best practices for guest networks](https:/
 
 For the purposes of this project, I'll assume your guest network SSID is `guests`.
 
-### My Network infrastructure is based on Unifi, but I don't have the integration.
+## My Network infrastructure is based on Unifi, but I don't have the integration.
 
 You can install it by following the instructions on the Home Assistant Unifi Network integration [page](https://www.home-assistant.io/integrations/unifi/).
 
@@ -418,7 +424,7 @@ Upon enablement, Home Assistant can now automatically generate a QR code with th
 
 However, your button entity will now enable you to create and apply a 20-char random password to your guest network without any work on your part. Just remember this is a fixed string, and there is nothing you can (easily) do to adapt it to better suit your needs.
 
-### I'm using a LXC for the ESPHome host, but I need more help to connect my ESPHome device directly to it.
+## I'm using a LXC for the ESPHome host, but I need more help to connect my ESPHome device directly to it.
 
 Let's try forcing the USB passthrough.
 
@@ -452,7 +458,7 @@ If at this point you still don't have USB passthrough to your ESPHome Host, ther
 
 I won't cover further passthrough troubleshooting here.
 
-### For the love of all that's sacred, I cannot make this work using the `esp-idf` esp32 framework type.
+## For the love of all that's sacred, I cannot make this work using the `esp-idf` esp32 framework type.
 
 This one is a pain.
 
@@ -487,7 +493,7 @@ rm -rf *
 
 This will force the ESPHome Host to start off with a clean slate - it will redownload and recompilate all of its platformio packages, this time with the right amount of space needed to succeed.
 
-### I'm getting an ESP_ERR_NVS_NOT_ENOUGH_SPACE error!
+## I'm getting an ESP_ERR_NVS_NOT_ENOUGH_SPACE error!
 
 After multiple uploads, your device's Non-Volatile Storage might need some housekeeping.
 
@@ -504,9 +510,11 @@ The second command uses your USB passthrough connection to write the file on you
 
 You'll need to replace `/dev/ttyACM0` with your own USB port.
 
-## Bonus
 
-### Presentation
+
+# Bonus
+
+## Presentation
 
 There are many ideas around how to present your screen. From handmade stands, to Ikea frames and everything in between.
 
@@ -569,7 +577,8 @@ Things I'm thinking of:
 - Change the whole approach to use the existing (but removed) Unifi integration component!
 
 
-## References
+
+# References
 
 There are lots of comments, articles, projects, and tools that allowed me to develop this little solution. Either through inspiration, or problem solving. They are all worth taking a look at.
 
