@@ -28,13 +28,13 @@
 - [ ] Load up the `epaper_guest_deshboard.yaml` file on your ESPHome driver board.
     - [ ] Adjust the esphome name and friendly name
     - [ ] Ensure the `secrets.yaml` file includes entries for:
-        - [ ] wifi_ssid
-        - [ ] wifi_password
-        - [ ] wifi_ssid_fallback
-        - [ ] wifi_password_fallback
-        - [ ] homeassistant_api_encryption_key
-        - [ ] ota_update_password
-- [ ] Create a HA dashboard card to control your display from HA.
+        - [ ] `wifi_ssid`
+        - [ ] `wifi_password`
+        - [ ] `wifi_ssid_fallback`
+        - [ ] `wifi_password_fallback`
+        - [ ] `homeassistant_api_encryption_key`
+        - [ ] `ota_update_password`
+- [ ] Create a HA dashboard card to control your display from HA (refresh password on demand or turn wifi off).
 
 #### Note that:
 1. MDIs are imported as images.
