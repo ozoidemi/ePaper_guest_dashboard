@@ -513,7 +513,7 @@ There are many ideas around how to present your screen. From handmade stands, to
 
 In my mind, this project would benefit from a stand like this:
 
-![Image](/resources/stand.png)
+<img src="/resources/stand.png" width=70% height=70%>
 
 https://www.hackster.io/lmarzen/esp32-e-paper-weather-display-a2f444
 
