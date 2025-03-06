@@ -260,7 +260,7 @@ The final step is to install `zbar-tools`, which are necessary for the [QR code 
 
 To do so, just use the Terminal add-on.
 
-If you don't have it already, then go to *Settings -> Add-ons -> Add-on Store" and look for the Advanced SSH & Web Terminal.
+If you don't have it already, then go to *Settings -> Add-ons -> Add-on Store* and look for the Advanced SSH & Web Terminal.
 
 Once its up, run the following command.
 
@@ -334,6 +334,7 @@ Make sure to update the following substitutions / relevant values at the beginni
     - Make sure to adjust `canvas.width` and `canvas.height` if your screen isn't 800x480 px. 
 
 Then just install, kick back, and wait for the screen to retrieve and load up all the info you have.
+
 
 Congrats! you should now have a functional display to present to your guests!
 
