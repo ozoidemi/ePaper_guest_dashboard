@@ -351,9 +351,9 @@ Even when the UI Network Integration generates a QR code for us automatically, i
 1. Only exists in memory.
 2. Is much harder to use than what you might think.
 
-I won't go into all the details, but the bottom line is that, unless you save the QR, you almost can't do anything with it.
+I won't go into all the details. The bottom line is that, unless you save the QR, you almost can't do anything with it.
 
-If you want to try a different approach, you can implement a custom component using the rolled back PR from the UI Network Integration - that's publicly available.
+If you want to try a different approach, you can implement a custom component using the rolled back PR from the UI Network Integration - this project is publicly available.
 
 ## What is my installation, you ask?
 
