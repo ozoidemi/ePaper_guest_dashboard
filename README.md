@@ -68,6 +68,8 @@ And that's it.
 
 Yes, but I haven't tested the code (yet).
 
+Essentially, you'd need to manually define an SSID and Password for your network from Home Assistant. Then the functionality already in place should take care of the rest.
+
 To try it:
 
 1. **Ignore** the `automations.yaml` file.
