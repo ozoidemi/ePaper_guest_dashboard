@@ -452,7 +452,7 @@ If at this point you still don't have USB passthrough to your ESPHome Host, ther
 
 I won't cover further passthrough troubleshooting here.
 
-### For the love of all that's sacred, I cannot make this work using the `esp-idf` esphome framework type.
+### For the love of all that's sacred, I cannot make this work using the `esp-idf` esp32 framework type.
 
 This one is a pain.
 
@@ -483,7 +483,7 @@ cd ~/.platformio
 rm -rf *
 ```
 
-**Be careful** with `rm -rf`. That's quite a dangerous command.
+**Be careful** with `rm -rf *`. That's quite a dangerous command.
 
 This will force the ESPHome Host to start off with a clean slate - it will redownload and recompilate all of its platformio packages, this time with the right amount of space to succeed.
 
