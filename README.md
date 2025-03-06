@@ -109,7 +109,7 @@ Seriously.
 
 #### Fact 1 out of 3
 
-Yes. I mentioned it already, but let's hit it one more time for the people in the back:
+Let's hit it one more time for the people in the back:
 
 **DISCLAIMER**
 **This project stores and exposes WiFi credentials in plain text!**
@@ -122,17 +122,17 @@ If you don't understand the risks involved, then do yourself a favor and **avoid
 
 #### Fact 2 out of 3
 
-The Unifi Network Integration team decided against having the network password stored into a sensor.
+The HA team in charge of the Unifi Network Integration decided against having the network password stored into a sensor.
 
 There are very good reasons for this.
 
 In fact, at one point they had enabled this functionality, only to roll it back soon after due to security concerns.
 
-With great power comes great responsibility... thankfully, no power means no responsibility, right? RIGHT?
+With great power comes great responsibility... thankfully, no power means no responsibility? right? RIGHT???!!!
 
 #### Fact 3 out of 3
 
-You should **DEFINITELY** know that the guy who developed the base QR code implementation—which was later adopted by the official Unifi Network integration team in HA—had this to say about my idea:
+You should **DEFINITELY** know that the guy who developed the base QR code implementation—which was later adopted by the official Unifi Network integration in HA—had this to say about my idea:
 
 > You do you, but I for one will never do any of the things you just suggested. In fact, given what you just wrote, I question the need for you to even have a QR code at all.
 
@@ -144,7 +144,7 @@ You should **DEFINITELY** know that the guy who developed the base QR code imple
 
 I just don't agree with shoving a 20-char long random password down my users' throat. Especially when it is possible that the QR won't work for them in the first place.
 
-Besides, the password is already in plain text the moment it's printed in a QR format, so... meh.
+Besides, the password is already in plain text the moment it's printed in a QR format, so...
 
 Moving on.
 
