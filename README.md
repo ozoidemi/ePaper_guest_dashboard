@@ -91,7 +91,7 @@ With that out of the way, let's dive into the details...
 
 My parents love to entertain people. They also love living in an area with limited cell coverage. And they also have no qualms about making their tech problems someone else's tech problems...
 
-As such, this project has two goals
+As such, this project has two goals:
 - Present a device-agnostic response to non-tech visitors needing WAN access on a semi-isolated location.
 - Relieve any tech person in the vicinity from having to play the on-call tech support role in any way, shape, or form.
 
@@ -132,7 +132,7 @@ There are very good reasons for this.
 
 In fact, at one point they had enabled this functionality, only to roll it back soon after due to security concerns.
 
-With great power comes great responsibility... thankfully, no power means no responsibility? right? RIGHT???!!!
+With great power comes great responsibility.
 
 #### Fact 3 out of 3
 
@@ -146,9 +146,11 @@ You should **DEFINITELY** know that the guy who developed the base QR code imple
 
 *Deservingly so?* Still perhaps.
 
-I just don't agree with shoving a 20-char long random password down my users' throat. Especially when it is possible that the QR won't work for them in the first place.
+I just don't agree with shoving a 20-char long random password down my users' throat.
 
-Besides, the password is already in plain text the moment it's printed in a QR format, so...
+Especially when it is possible that the QR won't work for all of them in the first place - what if users need to connect a regular laptop? Or their camera doesn't work? Or their device simply fails to read the QR?
+
+Besides, the password already exists in plain text the moment it's printed in a QR format, and there is the pesky issue of needing to be in physical proximity to exploit it... so...
 
 Moving on.
 
@@ -169,7 +171,7 @@ It's worth mentioning that [Waveshare site](https://www.waveshare.com/product/) 
 
 The closest ones are:
 
-- [This display](https://www.waveshare.com/product/displays/e-paper/epaper-1/7.5inch-e-paper.htm), which is a new version with 4 gray scale levels. The one used in this project is B&W only.
+- [This display](https://www.waveshare.com/product/displays/e-paper/epaper-1/7.5inch-e-paper.htm), which is a new version with 4 grayscale levels. The one used in this project is B&W only.
 
 - [This driver board](https://www.waveshare.com/product/displays/e-paper/driver-boards/e-paper-esp32-driver-board.htm). The pinout definition *could* be different, but I'm not sure. Different pages have different information.
 
@@ -225,27 +227,11 @@ On HA's file editor, search for the `/homeassistant/automations.yaml` file and a
 
 If you don't have the file editor, you can add it from the add-on store (*Settings -> Add-ons -> Add-on store*).
 
-Also, if you don't know exactly *where* to add these entries to the file, know that the file you are seeing is my entire automations file at this point. So you can just copy and paste its contents, or completely replace it via HA's file editor.
+Also, if you don't know exactly *where* to add these entries to the file, know that the file you are seeing is my entire automations file at this point - you can just copy and paste as-is.
 
 The first entry takes a snapshot of the QR code (`image.guests_qr_code`) and stores it in `/config/www/wifi_qr.png`.
 
 The second ensures that the guest network password is updated automatically at least weekly. If you need a different schedule, then adjust accordingly. It will not break anything, and you could easily remove it altogether.
-
-> **I don't get why this is so convoluted. Can't we just pass over the existing QR and be done with it?**
->
-> Not really, no.
-> 
-> Even when the Unifi Network Integration generates a QR code for us automatically, it:
-> 1. Only exists in memory.
-> 2. Is much harder to use than what you might think.
->
-> If you know the right URL, you can get access to the QR. However, this access is very short lived due to the way the URL is created - it relies on the entity's attributes, which are continuously changing.
->
->  Also, if you know enough about HA templates, you can get a template expression that will allow you to stay one step ahead of the changes. Regretfully, the QR will continue to be useless.
->
-> Unless you save the QR, you almost can't do anything with it. That's why I used the snapshot automation.
->
-> In fact, even if you were to send the QR as an image to the ESPHome device, you'd still need to get the snapshot first.
 
 #### Configuration.yaml
 
@@ -349,15 +335,28 @@ Congrats! you should now have a functional display to present to your guests!
 
 ## Troubleshooting
 
+### I don't get why this is so convoluted. Can't we just pass over the existing QR and be done with it?
+
+Regretfully, no.
+ 
+Even when the UI Network Integration generates a QR code for us automatically, it:
+
+1. Only exists in memory.
+2. Is much harder to use than what you might think.
+
+I won't go into all the details, but the bottom line is that, unless you save the QR, you almost can't do anything with it.
+
+If you want to try a different approach, you can implement a custom component using the rolled back PR from the UI Network Integration - that's publicly available.
+
 ### What is my installation, you ask?
 
 #### HA/ESPHome
 
 A Lenovo Tiny running Proxmox 8. Everything else is built on top of it.
 
-You can find very detailed installation instructions on how to set this up [here](https://community.home-assistant.io/t/installing-home-assistant-os-using-proxmox-8/201835).
+Instructions can be found [here](https://community.home-assistant.io/t/installing-home-assistant-os-using-proxmox-8/201835).
 
-If you haven't seen or used tteck's helper scripts before, please check out the amazing community managing [this project](https://github.com/community-scripts/ProxmoxVE) in his honor - he regretfully passed away in late 2024.
+Also, check out the amazing community managing [tteck's scripts](https://github.com/community-scripts/ProxmoxVE). He regretfully passed away in late 2024, but his scripts definitely live on.
 
 Here is the [direct link](https://community-scripts.github.io/ProxmoxVE/scripts) to the actual scripts.
 
@@ -371,7 +370,7 @@ Notice that default options are typically all you need when going through the he
 
 #### Privileged Container Type
 
-You see, there are cases in which you will need USB passthrough access to the LXC. And no matter what you do, you will not get it if you don't choose a _Privileged_ container type during set up.
+There are cases in which you'll need USB passthrough access to the LXC. If you don't choose a _Privileged_ container type during set up, you won't get it.
 
 To do so, just choose the advanced settings when the installer prompts you.
 
@@ -379,11 +378,11 @@ To do so, just choose the advanced settings when the installer prompts you.
 
 Then choose all the defaults, except for the disk size and the container type.
 
-For the disk sie, you should allocate a minimum of 8GB, instead of the default 4GB.
+For the disk size, you should allocate a minimum of 8GB, instead of the default 4GB. This isn't related to the container type, but will solve other issues.
 
 ![Image](/resources/pve_disk_size.png)
 
- For the container type, simply choose "privileged".
+For the container type, simply choose "privileged".
 
 ![Image](/resources/pve_privileged.png)
 
@@ -391,11 +390,11 @@ For the disk sie, you should allocate a minimum of 8GB, instead of the default 4
 
 Running a UXG-Pro with Unifi Network 9.0.114 on a local CK-Gen2. Also multiple U6+/U6 lite APs, and multiple USW-24-POE switches.
 
-My guest network isolates all devices from one another in the same VLAN, and prevents them from accessing any other VLANs.
+My guest network isolates all devices from one another within the same VLAN, and prevents them from accessing any other VLANs.
 
 Ubiquiti provides some advice around [best practices for guest networks](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi).
 
-For the purposes of this project, we'll assume your guest network SSID is `guests`.
+For the purposes of this project, I'll assume your guest network SSID is `guests`.
 
 ### My Network infrastructure is based on Unifi, but I don't have the integration.
 
@@ -406,10 +405,10 @@ Once the integration is up and running in HA, go to *Settings -> Devices & Servi
 On the search box, search for "guests" (remember? the guest network SSID we'd assume moving forward?).
 
 You will see a few entities here.
-- sensor.guests
-- switch.guests
-- image.guests_qr_code
-- button.guests_regenerate_password
+- `sensor.guests`
+- `switch.guests`
+- `image.guests_qr_code`
+- `button.guests_regenerate_password`
 
 The latter two entities should be disabled if you haven't touch them.
 
@@ -457,7 +456,7 @@ I won't cover further passthrough troubleshooting here.
 
 This one is a pain.
 
-First, make sure that your ESPHome hosts has at least 8GB of disk space. I found the hard way that 4GB is simply not enought to download and compile all the platformio packages needed for this framework type.
+First, make sure that your ESPHome hosts has at least 8GB of disk space. I found the hard way that 4GB is simply not enough to download and compile all the platformio packages needed for this framework type.
 
 If your ESPHome doesn't have the minimum 8GB, and you are using PVE, you can add the extra disk as follows:
 
@@ -477,34 +476,33 @@ Finally type in the amount of disk you want to **add**. So if you already had 4G
 
 Reboot your LXC for good hygiene and you'll be ready for the next step.
 
-Now go to your ESPHome LXC console, go to your platformio directory, and ruthlessly erase all of its contents. The platformio directory is hidden so, unless you are using `ls -la` on your root directory, you won't see it.
+Now go to your ESPHome LXC console, go to your platformio directory, and ruthlessly erase all of its contents with `rm -rf *`. Just be careful - this is quite a dangerous command to execute on a wrong directory.
+
+The platformio directory is hidden so, unless you are using `ls -la` on your root directory, you won't see it.
 
 ```
 cd ~/.platformio
 rm -rf *
 ```
 
-**Be careful** with `rm -rf *`. That's quite a dangerous command.
-
-This will force the ESPHome Host to start off with a clean slate - it will redownload and recompilate all of its platformio packages, this time with the right amount of space to succeed.
-
+This will force the ESPHome Host to start off with a clean slate - it will redownload and recompilate all of its platformio packages, this time with the right amount of space needed to succeed.
 
 ### I'm getting an ESP_ERR_NVS_NOT_ENOUGH_SPACE error!
 
 After multiple uploads, your device's Non-Volatile Storage might need some housekeeping.
 
-If you ever get this NVS error during the compilation and programming of your ESPHome device, then use the following commands.
+If you ever get this NVS error during the compilation and programming of your ESPHome device, then connect directly to your ESPHome Host and use the following commands.
 
 ```
 dd if=/dev/zero of=nvs_zero bs=1 count=20480
 esptool.py --chip esp32 --port /dev/ttyACM0 write_flash 0x009000 nvs_zero
 ```
 
-The first command writes a file of null bytes (the typical size of your NVS), naming it nvs_zero.
+The first command writes a file of null bytes (the typical size of your NVS) on the current directory, naming it nvs_zero.
 
-The second command writes the file on your ESPHome device at 0x009000, which is the typical address for the NVS file.
+The second command uses your USB passthrough connection to write the file on your ESPHome device at 0x009000, which is the typical address for the NVS file.
 
-Note that `/dev/ttyACM0` depends on your installation, and you will need to verify the rigth entry for your project.
+You'll need to replace `/dev/ttyACM0` with your own USB port.
 
 ## Bonus
 
@@ -518,17 +516,13 @@ In my mind, this project would benefit from a stand like this:
 
 https://www.hackster.io/lmarzen/esp32-e-paper-weather-display-a2f444
 
-What I'd do differently though, is the USB-C connector. Instead of having it connected straight in the back, I would either place the connector facing downwards - just like the power plug of a Sonos One speaker - with a 90-degree cable, or offset it into the base, at the bottom of it.
+What I'd do differently though, is the USB-C connector embedded in the back of base.
 
-That would hide the connector nicely. Guests would only see a single straight cable coming from the bottom of the base.
+Instead, I would either place the connector facing downwards (like the power plug of a Sonos One speaker) or I'd offset it into the base at the bottom (which would end up looking almost the same as the first picture below).
 
 If you haven't seen something like that, it looks super clean!
 
-The challenge with the 90-degree connector approach might be the length of the connector. If you are ever in the need to replace it, you might find it hard to find the same original one, or one with the same dimensions. So it could become a pain.
-
-From that perspective, an straight but offset connector at the bottom migth be the best bet. 
-
-FYI: These pictures aren't mine. They are here just to illustrate the kind of look I'd go after.
+FYI: These pictures are here just to illustrate the kind of look I'd go after. They aren't mine.
 
 ![Image](/resources/sonos_example1.jpg)
 
@@ -538,9 +532,13 @@ FYI: These pictures aren't mine. They are here just to illustrate the kind of lo
 
 ## TODO
 
-As the first half-decent version, I still have a lot of work to do in this implementation.
+As this is the first half-decent version of this project, I still have a lot of work to do.
 
-Things I'm thinking of in no particular order:
+Things I'm thinking of:
+
+- Implement the rolled back custom component for the UI integration
+
+    - That would get rid of almost all the To Do's below.
 
 - Automate deleting the QR snapshot from HA.
 
