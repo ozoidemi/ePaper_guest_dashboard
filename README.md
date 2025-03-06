@@ -66,9 +66,13 @@ And that's it.
 
 ### Hold on... Can I make this work without Unifi?
 
-Yes, but I haven't tested the code (yet).
+Yes, but you'd lose all the automation advantages.
 
-Essentially, you'd need to manually define an SSID and Password for your network from Home Assistant. Then the functionality already in place should take care of the rest.
+Also, I wrote the code, but haven't tested it (yet).
+
+Essentially, you'd need to manually define a `wifi_ssid` and a `wifi_password` for your network from Home Assistant.
+
+From then on, the functionality already in place should take care of the rest.
 
 To try it:
 
@@ -164,11 +168,10 @@ This project makes use of:
 It's worth mentioning that [Waveshare site](https://www.waveshare.com/product/) has updated their product catalog, and these devices are no longer available directly.
 
 The closest ones are:
-- [Display](https://www.waveshare.com/product/displays/e-paper/epaper-1/7.5inch-e-paper.htm)
-  This new display has 4 gray scale levels, while the one used in this project only has two. 
 
-- [Board](https://www.waveshare.com/product/displays/e-paper/driver-boards/e-paper-esp32-driver-board.htm)
-  Here, the pinout definition *could* be different - different pages have different information.
+- [This display](https://www.waveshare.com/product/displays/e-paper/epaper-1/7.5inch-e-paper.htm), which is a new version with 4 gray scale levels. The one used in this project is B&W only.
+
+- [This driver board](https://www.waveshare.com/product/displays/e-paper/driver-boards/e-paper-esp32-driver-board.htm). The pinout definition *could* be different, but I'm not sure. Different pages have different information.
 
 #### Original Board - [Wiki](https://www.waveshare.com/wiki/E-Paper_ESP32_Driver_Board#Pins)
 ```
@@ -210,7 +213,7 @@ Since my host is a Proxmox LXC, I needed a USB passthrough to the container.
 
 If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#privileged-container-type).
 
-Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#troubleshooting) section if you want to know more about my own installation, or if you have further issues.
+Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#troubleshooting) section if you want to know more about my own installation, or if you need further assistance.
 
 ### Programming the display
 
