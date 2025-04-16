@@ -9,7 +9,7 @@
 
 **DO NOT implement if you don't understand the serious risks involved!**
 
-Ubiquiti published a set of best practices for guest networks. [Make sure to understand them.](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi).
+Ubiquiti published a set of best practices for guest networks. [Make sure to understand them](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi).
 
 ---
 
