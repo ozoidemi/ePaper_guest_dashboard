@@ -9,6 +9,8 @@
 
 **DO NOT implement if you don't understand the serious risks involved!**
 
+Ubiquiti published a set of best practices for guest networks. [Make sure to understand them.](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi).
+
 ---
 
 ## TL;DR.
@@ -22,10 +24,10 @@
 ### Installation
 - [ ] Isolate your guest network.
     - [ ] For minimal modifications use SSID "guests".
-- [ ] Add automation rules to HA's `automations.yaml` file.
-- [ ] Declare all the configuration entities on your HA's `configuration.yaml` file.
+- [ ] Add automation rules to HA - `automations.yaml` file.
+- [ ] Declare all the configuration entities on your HA - `configuration.yaml` file.
 - [ ] Copy the `canvas_struct.h` header file to `~/custom_components/` on your ESPHome Host.
-- [ ] Load up the `epaper_guest_deshboard.yaml` file on your ESPHome driver board.
+- [ ] Load up the `epaper_guest_dashboard.yaml` file on your ESPHome driver board.
     - [ ] Adjust the esphome name and friendly name
     - [ ] Ensure the `secrets.yaml` file includes entries for:
         - [ ] `wifi_ssid`
