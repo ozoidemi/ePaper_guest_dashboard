@@ -346,7 +346,7 @@ Congrats! you should now have a functional display to present to your guests!
 
 ## I don't get why this is so convoluted. Can't we just pass over the existing QR and be done with it?
 
-Maybe? Regretfully I didn't another way.
+Maybe? Regretfully I didn't find another way.
  
 Even when the UI Network Integration generates a QR code for us automatically, it:
 
