@@ -465,7 +465,7 @@ I won't cover further passthrough troubleshooting here.
 
 This one is a pain.
 
-First, make sure that your ESPHome hosts has at least 8GB of disk space. I found the hard way that 4GB is simply not enough to download and compile all the platformio packages needed for this framework type.
+First, make sure that your ESPHome host has at least 8GB of disk space. I found the hard way that 4GB is simply not enough to download and compile all the platformio packages needed for this framework type.
 
 If your ESPHome doesn't have the minimum 8GB, and you are using PVE, you can add the extra disk as follows:
 
