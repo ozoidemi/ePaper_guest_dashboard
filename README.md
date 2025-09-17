@@ -494,7 +494,7 @@ cd ~/.platformio
 rm -rf *
 ```
 
-This will force the ESPHome Host to start off with a clean slate - it will redownload and recompilate all of its platformio packages, this time with the right amount of space needed to succeed.
+This will force the ESPHome Host to start off with a clean slate - it will redownload and recompile all of its platformio packages, this time with the right amount of space needed to succeed.
 
 ## I'm getting an ESP_ERR_NVS_NOT_ENOUGH_SPACE error!
 
