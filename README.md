@@ -36,7 +36,7 @@ Ubiquiti published a set of best practices for guest networks. [Make sure to und
         - [ ] `wifi_password_fallback`
         - [ ] `homeassistant_api_encryption_key`
         - [ ] `ota_update_password`
-- [ ] Create a HA dashboard card to control your display from HA (refresh password on demand or turn wifi off).
+- [ ] Create an HA dashboard card to control your display from HA (refresh password on demand or turn wifi off).
 
 #### Note that:
 1. MDIs are imported as images.
