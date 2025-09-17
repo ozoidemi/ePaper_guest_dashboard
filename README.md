@@ -494,6 +494,13 @@ cd ~/.platformio
 rm -rf *
 ```
 
+Another safer option is:
+
+```
+cd ~
+rm -rf .platformio
+```
+
 This will force the ESPHome Host to start off with a clean slate - it will redownload and recompile all of its platformio packages, this time with the right amount of space needed to succeed.
 
 ## I'm getting an ESP_ERR_NVS_NOT_ENOUGH_SPACE error!
@@ -512,6 +519,15 @@ The first command writes a file of null bytes (the typical size of your NVS) on 
 The second command uses your USB passthrough connection to write the file on your ESPHome device at 0x009000, which is the typical address for the NVS file.
 
 You'll need to replace `/dev/ttyACM0` with your own USB port.
+
+Notice that you could get an error with the second command if you haven't installed esptools already. To fix that, make sure to install pip and esptools in the ESPHome host.
+
+```
+apt upgrade
+apt install pip
+pip install --upgrade esptool
+```
+
 
 
 
