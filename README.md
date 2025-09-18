@@ -233,7 +233,7 @@ On HA's file editor, search for the `/homeassistant/automations.yaml` file and a
 
 If you don't have the file editor, you can add it from the add-on store (*Settings -> Add-ons -> Add-on store*).
 
-Also, if you don't know exactly *where* to add these entries to the file, know that the file you are seeing is my entire automations file at this point - you can just copy and paste as-is.
+Also, if you don't know exactly *where* to add these entries to the file, know that the project file you are seeing is my entire automations file at this point - you can just copy and paste as-is.
 
 The first entry takes a snapshot of the QR code (`image.guests_qr_code`) and stores it in `/config/www/wifi_qr.png`.
 
@@ -245,7 +245,7 @@ Back into the file editor, go to `/homeassistant/configuration.yaml`.
 
 Here, load up all the entities into your HA's `configuration.yaml` file.
 
-You should see the following entries, each with a differnet number of elements:
+You should see the following entries, each with a different number of elements:
 
 1. `image_processing`.
 2. `input_select`.
@@ -255,7 +255,7 @@ You should see the following entries, each with a differnet number of elements:
 
 If you already have any of these sections, just append the new entries at the end of each, and make sure to respect the spacing.
 
-The file includes all the entities that you will need. Other than adding an icon to `guest_display_deep_sleep_flag`, you wont need to create nor modify any entities via the GUI.
+The file includes all the entities that you will need. Other than adding an icon to `guest_display_deep_sleep_flag`, you won't need to create nor modify any other entities via the GUI.
 
 #### CLI
 The final step is to install `zbar-tools`, which are necessary for the [QR code integration](https://www.home-assistant.io/integrations/qrcode) to work.
@@ -264,7 +264,7 @@ To do so, just use the Terminal add-on.
 
 If you don't have it already, then go to *Settings -> Add-ons -> Add-on Store* and look for the Advanced SSH & Web Terminal.
 
-Once its up, run the following command.
+Once it's up, run the following command.
 
 ```
 apk add zbar
@@ -284,7 +284,14 @@ That should be all from the Home Assistant side.
    cd config/custom_components
    ```
 
-3. Copy the `canvas_struct.h` file into that directory.
+   If you don't have it, create first with
+
+   ```
+   mkdir ~/config/custom_components
+   cd config/custom_components
+   ```
+
+4. Copy the `canvas_struct.h` file into that directory.
     
     - If you don't know how, you can:
         
@@ -297,7 +304,7 @@ That should be all from the Home Assistant side.
         - Paste the contents of the `canvas_struct.h' project file.
         - And save (ctrl + s, ctrl + x).
 
-4. Verify that the content of the file is correct using the `cat` command.
+5. Verify that the content of the file is correct using the `cat` command.
 
     ```
     cat canvas_struct.h
