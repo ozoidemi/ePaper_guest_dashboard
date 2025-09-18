@@ -320,7 +320,9 @@ Make sure to update the following substitutions / relevant values at the beginni
 
 1. Update `guest_ssid_switch: "switch.guests"` to match the SSID for your guest wifi.
 
-2. Make sure to define the following entries on your `secrets.yaml` file:
+   `guest_ssid_switch: "switch.[your_guest_network_ssid]"`
+
+3. Make sure to define the following entries on your `secrets.yaml` file:
 
     1. `homeassistant_api_encryption_key` for your HA API.
 
@@ -338,7 +340,7 @@ Make sure to update the following substitutions / relevant values at the beginni
 
     4. `wifi_ssid_fallback` and `wifi_password_fallback` for your Fallback Hotspot.
 
-3. On the `esphome` entry, look at the `on_boot` lambda.
+4. On the `esphome` entry, look at the `on_boot` lambda.
 
     - Make sure to adjust `canvas.width` and `canvas.height` if your screen isn't 800x480 px. 
 
