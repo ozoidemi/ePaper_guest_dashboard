@@ -50,7 +50,6 @@ If you're comfortable with those three points and have a properly isolated guest
 - [ ] Copy `template.yaml` to `/homeassistant/template.yaml`
 - [ ] Add the `automations.yaml` entry to your HA automations
 - [ ] Full restart HA
-- [ ] Set icon `mdi:sleep` on `binary_sensor.guest_display_deep_sleep_flag` via GUI
 
 **ESPHome Host**
 - [ ] Install dependencies:
@@ -242,15 +241,10 @@ The ESP communicates with your UniFi controller directly using an API key — no
 
 The WLAN ID (`_id`) is a unique internal identifier for your guest network. The ESP uses it to make sure it's only ever touching the right network — regardless of what the SSID is called.
 
-While logged into the UniFi dashboard, open your browser's developer console (`F12` → Console tab) and run:
+From a terminal (Powershell in Windows), execute the following command:
 
-```javascript
-fetch('/proxy/network/api/s/default/list/wlanconf')
-  .then(r => r.json())
-  .then(d => d.data.forEach(n => console.log(n._id, n.name)))
+```curl.exe -sk -H "X-API-KEY: [your-ha-api-key]" ` https://[unifi_controller_url]/proxy/network/api/s/default/list/wlanconf |  ConvertFrom-Json | Select-Object -ExpandProperty data | Where-Object { $_.name -eq "[YourGuestNetworkSSID]" } | Select-Object _id, name, x_passphrase, enabled
 ```
-
-You'll see a list of network IDs and names. Copy the `_id` for your guest network — it looks like a 24-character hex string.
 
 ---
 
