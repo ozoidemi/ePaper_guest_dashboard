@@ -262,9 +262,7 @@ What this adds:
 - **`input_select:`** — language selector (English, Castellano, Français, Italiano, Deutsch)
 - **`input_boolean:`** — three display control flags (border debug, grid debug, prevent deep sleep)
 - **`binary_sensor:`** — a time-of-day sensor that activates deep sleep between 9:58 PM and 7:58 AM
-- **`template: !include template.yaml`** — must be the **last line** in the file
-
-> **Why must `template:` be last?** Home Assistant's YAML loader treats `!include` as a stream continuation — the included file is parsed as part of the same document. Any keys after it end up outside the parse stream and are silently dropped. Put it last and this is never an issue.
+- **`template: !include template.yaml`** — must be the **last line** in the file. This will reduce the likelihood of other issues.
 
 ### template.yaml
 
@@ -280,7 +278,7 @@ This fires every Thursday at 8:55 PM and presses the ESP's rotate button — the
 
 ### Restart and Finish
 
-Do a **full HA restart** after saving all files (*Settings → System → Restart*). A config reload is not enough for the `rest:` sensors to register.
+Do a **full HA restart** after saving all files (*Settings → System → Restart*). Just to make sure.
 
 After restarting, go to *Settings → Devices & Services → Entities*, search for `guest_display_deep_sleep_flag`, open it, click the gear icon, and set the icon to `mdi:sleep`. This is the one thing the YAML config can't do for you.
 
