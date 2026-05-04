@@ -22,9 +22,8 @@ This is a baseline requirement, not a suggestion. Guests on a flat network can r
 
 Anyone who can see the screen can read the password.
 
-If you're comfortable with those three points and have a properly isolated guest network, read on.
 
-**Proceeding means you accept these risks.**
+If you're comfortable with those three points and have a properly isolated guest network, read on. **Proceeding means you accept any potential risks. This implementation provides no guarantees, explicit nor implied.**
 
 ---
 
@@ -43,7 +42,9 @@ If you're comfortable with those three points and have a properly isolated guest
 **UniFi**
 - [ ] Set up and isolate your guest network
 - [ ] Create an API key: *UniFi OS portal → Settings → Admins & Users → API Keys*
-- [ ] Find your guest WLAN's `_id` (browser console trick in [Step 1](#step-1--unifi-setup))
+
+**Terminal (Powershell in Windows)**
+- [ ] Find your guest WLAN's `_id` (command found in [Step 1](#step-1--unifi-setup))
 
 **Home Assistant**
 - [ ] Merge `configuration.yaml` contents into your HA configuration
@@ -63,7 +64,7 @@ If you're comfortable with those three points and have a properly isolated guest
 - [ ] Populate `secrets.yaml` with the entries listed below
 - [ ] Flash `epaper-guest-dashboard.yaml` to your device
 
-**Required `secrets.yaml` entries:**
+**Required `secrets.yaml` entries you need to update:**
 ```yaml
 wifi_ssid: "YourMainNetworkSSID"
 wifi_password: "YourMainNetworkPassword"
