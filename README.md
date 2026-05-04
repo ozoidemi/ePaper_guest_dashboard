@@ -10,9 +10,17 @@
 
 A few things to understand upfront:
 
-1. **The Unifi WiFi password is never exposed through Home Assistant sensors** Credentials live in the ESP device's RAM and in your UniFi controller only. HA is the scheduler and weather source — nothing more. In the no-UniFi variant, the guest password lives in HA's `secrets.yaml` and flows through HA template sensors. See [No UniFi?](#no-unifi) for details.
-2. **Your guest network must be isolated.** This is a baseline requirement, not a suggestion. Guests on a flat network can reach your other devices. Ubiquiti's [best practices guide](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi) is a good starting point.
-3. **Physical access = credential access.** Anyone who can see the screen can read the password.
+1. **The Unifi WiFi password is never exposed through Home Assistant sensors**
+
+Credentials live in the ESP device's RAM and in your UniFi controller only. HA is the scheduler and weather source — nothing more. In the no-UniFi variant, the guest password lives in HA's `secrets.yaml` and flows through HA template sensors. See [No UniFi?](#no-unifi) for details.
+
+2. **Your guest network must be isolated.**
+
+This is a baseline requirement, not a suggestion. Guests on a flat network can reach your other devices. Ubiquiti's [best practices guide](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi) is a good starting point.
+
+3. **Physical access = credential access.**
+
+Anyone who can see the screen can read the password.
 
 If you're comfortable with those three points and have a properly isolated guest network, read on.
 
