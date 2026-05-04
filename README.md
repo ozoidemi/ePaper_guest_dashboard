@@ -64,9 +64,9 @@ If you're comfortable with those three points and have a properly isolated guest
 
 **Required `secrets.yaml` entries you need to create/update:**
 ```yaml
-wifi_ssid: "YourMainNetworkSSID"
-wifi_password: "YourMainNetworkPassword"
-wifi_ssid_fallback_01: "epaper-fallback"
+wifi_ssid: "YourIoTNetworkSSID"
+wifi_password: "YourIoTNetworkPassword"
+wifi_ssid_fallback: "epaper-fallback"
 wifi_password_fallback: "your-fallback-password"
 homeassistant_api_encryption_key: "your-ha-api-key"
 ota_update_password: "your-ota-password"
