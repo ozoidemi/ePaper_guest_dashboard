@@ -23,8 +23,7 @@ This is a baseline requirement, not a suggestion. Guests on a flat network can r
 Anyone who can see the screen can read the password.
 
 
-If you're comfortable with those three points and have a properly isolated guest network, read on. **Proceeding means you accept any potential risks. This implementation provides no guarantees, explicit nor implied.**
-
+If you're comfortable with those three points and have a properly isolated guest network, read on.
 ---
 
 ## TL;DR:
@@ -50,7 +49,6 @@ If you're comfortable with those three points and have a properly isolated guest
 - [ ] Merge `configuration.yaml` contents into your HA configuration
 - [ ] Copy `template.yaml` to `/homeassistant/template.yaml`
 - [ ] Add the `automations.yaml` entry to your HA automations
-- [ ] Full restart HA
 
 **ESPHome Host**
 - [ ] Install dependencies:
@@ -105,9 +103,9 @@ wifi_password: "YourGuestNetworkPassword"
 
 **ESPHome (`secrets.yaml`)** — your management network (what the ESP connects to for HA communication) plus HA API credentials:
 ```yaml
-wifi_ssid: "YourMainNetworkSSID"
-wifi_password: "YourMainNetworkPassword"
-wifi_ssid_fallback_01: "ePaper-Display-Fallback"
+wifi_ssid: "YourIoTNetworkSSID"
+wifi_password: "YourIoTNetworkPassword"
+wifi_ssid_fallback: "ePaper-Display-Fallback"
 wifi_password_fallback: "your-fallback-ap-password"
 homeassistant_api_encryption_key: "your-ha-api-key"
 ota_update_password: "your-ota-password"
@@ -139,7 +137,7 @@ An ESP32 e-paper display that shows your guest Wi-Fi credentials and live weathe
 
 **The display shows:**
 - Wi-Fi QR code (generated on-device — no cloud, no HA)
-- Guest SSID and formatted 12-character password
+- Guest SSID and formatted 12-character password separated in 4 groups of 3 characters for easy read
 - Current temperature, humidity, UV index
 - 3-hour weather forecast with conditions
 - Sunset time
@@ -155,7 +153,7 @@ An ESP32 e-paper display that shows your guest Wi-Fi credentials and live weathe
 **The ESP handles:**
 - Talking directly to UniFi at boot to read the current password and network state
 - Generating new passwords and pushing them to UniFi on rotation
-- QR code generation and display rendering
+- QR code generation and display rendering without ever interacting with the UniFi integration
 
 **HA never touches the guest password** (UniFi variant). It only presses a button to tell the ESP to rotate — the ESP does everything else. In the no-UniFi variant, HA holds the credentials and the ESP reads them from HA.
 
@@ -167,7 +165,6 @@ People who:
 - Entertain guests regularly and are tired of the "what's the WiFi password?" conversation
 - Have a properly isolated guest network
 - Are comfortable editing YAML files
-- Would rather give guests a readable 12-character password than ask them to scan a QR code
 
 If you need a one-click install, this will frustrate you. If you're willing to follow a step-by-step guide, you'll have it running in an afternoon.
 
@@ -290,7 +287,7 @@ After restarting, go to *Settings → Devices & Services → Entities*, search f
 
 If you previously had a different weather setup (HA weather integration, template-based forecast sensors, etc.), you may have stale entities in your registry with names like `current_temperature` or `forecast_condition_1h`. These can silently conflict with the new REST sensors.
 
-After the full restart, check *Settings → Devices & Services → Entities* and search for each weather sensor name. If you see two entries with the same name but different integrations (e.g., one `template` and one `rest`), delete the stale one. Restart once more and the REST sensors will claim the correct entity IDs.
+Check *Settings → Devices & Services → Entities* and search for each weather sensor name. If you see two entries with the same name but different integrations (e.g., one `template` and one `rest`), delete the stale one if you can. Restart once more and the REST sensors will claim the correct entity IDs.
 
 ---
 
@@ -339,11 +336,11 @@ In your ESPHome config directory, open or create `secrets.yaml` and add:
 ```yaml
 # Main network — this is what the ESP connects to for HA communication
 # This is NOT your guest network
-wifi_ssid: "YourMainNetworkSSID"
-wifi_password: "YourMainNetworkPassword"
+wifi_ssid: "YourIoTNetworkSSID"
+wifi_password: "YourIoTNetworkPassword"
 
 # Fallback hotspot — used if the ESP can't reach your main network
-wifi_ssid_fallback_01: "epaper-fallback"
+wifi_ssid_fallback: "epaper-fallback"
 wifi_password_fallback: "your-fallback-password"
 
 # Home Assistant API
@@ -359,7 +356,7 @@ unifi_wlan_id: "your-24-char-wlan-id"
 guest_ssid: "YourGuestNetworkName"
 ```
 
-The `wifi_ssid` and `wifi_password` here are for your **management network** — the network the ESP uses to talk to HA and UniFi. These are completely separate from the guest credentials the display shows.
+The `wifi_ssid` and `wifi_password` here are for your **IoT network** — the network the ESP uses to talk to HA and UniFi. These are completely separate from the guest credentials the display shows.
 
 ### Flash the Device
 
@@ -369,15 +366,15 @@ The `wifi_ssid` and `wifi_password` here are for your **management network** —
 4. Optionally update `name` and `friendly_name` at the top of the file
 5. Click Install
 
-The first flash must be done over USB. Subsequent updates can be done over-the-air.
+Updates can be done over-the-air.
 
 ### What to Expect on First Boot
 
 On first connection to Home Assistant, the ESP:
 1. Calls the UniFi API to read the current password and network state
-2. Renders the display with everything it has
-
-Weather data (temperature, humidity, UV, forecast) arrives from HA within seconds of connecting. If the display shows zeros or blanks on the weather section, wait for the next 5-minute refresh cycle — HA's REST sensors need one full 30-minute poll to have data ready, and the first display render may happen before that.
+2. Renders a blank screen
+3. Waits 60 seconds and refreshes the screen with all the correct data
+4. Then the screen refreshes every 5 minutes
 
 ---
 
