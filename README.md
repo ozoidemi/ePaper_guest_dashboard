@@ -280,7 +280,7 @@ This fires every Thursday at 8:55 PM and presses the ESP's rotate button — the
 
 Do a **full HA restart** after saving all files (*Settings → System → Restart*). Just to make sure.
 
-After restarting, go to *Settings → Devices & Services → Entities*, search for `guest_display_deep_sleep_flag`, open it, click the gear icon, and set the icon to `mdi:sleep`. This is the one thing the YAML config can't do for you.
+After restarting, go to *Settings → Devices & Services → Entities*, search for `guest_display_deep_sleep_flag`, open it, click the gear icon, and set the icon to `mdi:sleep`. This is the one thing the YAML config can't do for you (as far as I know).
 
 ### Stale Entities
 
