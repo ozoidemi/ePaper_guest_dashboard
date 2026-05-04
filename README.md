@@ -62,7 +62,7 @@ If you're comfortable with those three points and have a properly isolated guest
 - [ ] Populate `secrets.yaml` with the entries listed below
 - [ ] Flash `epaper-guest-dashboard.yaml` to your device
 
-**Required `secrets.yaml` entries you need to update:**
+**Required `secrets.yaml` entries you need to create/update:**
 ```yaml
 wifi_ssid: "YourMainNetworkSSID"
 wifi_password: "YourMainNetworkPassword"
