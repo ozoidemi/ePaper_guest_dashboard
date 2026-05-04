@@ -172,7 +172,7 @@ If you need a one-click install, this will frustrate you. If you're willing to f
 
 The HA team specifically chose not to expose guest network passwords as sensors in the UniFi integration. There are good reasons for that decision.
 
-This project takes a different view: the password is already public the moment it's printed on a QR code on your wall — the only meaningful control is physical proximity, which is already required to use your guest network anyway.
+This project takes a different view: the password is already public the moment it's printed on a QR code on your wall — the only meaningful controls are physical and visual access, which are already required to use your guest network anyway.
 
 You do you. But know what you're signing up for.
 
@@ -302,8 +302,6 @@ apt install libcairo2-dev
 ```
 
 If you're running ESPHome as a Home Assistant add-on, open a terminal (*Settings → Add-ons → Advanced SSH & Web Terminal*) and run these there.
-
-You only need to do this once. Subsequent device updates don't require reinstalling.
 
 ### Add canvas_struct.h
 
