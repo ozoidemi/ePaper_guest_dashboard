@@ -241,7 +241,8 @@ The WLAN ID (`_id`) is a unique internal identifier for your guest network. The 
 
 From a terminal (Powershell in Windows), execute the following command:
 
-```curl.exe -sk -H "X-API-KEY: [your-ha-api-key]" ` https://[unifi_controller_url]/proxy/network/api/s/default/list/wlanconf |  ConvertFrom-Json | Select-Object -ExpandProperty data | Where-Object { $_.name -eq "[YourGuestNetworkSSID]" } | Select-Object _id, name, x_passphrase, enabled
+```
+curl.exe -sk -H "X-API-KEY: [your-ha-api-key]" ` https://[unifi_controller_url]/proxy/network/api/s/default/list/wlanconf |  ConvertFrom-Json | Select-Object -ExpandProperty data | Where-Object { $_.name -eq "[YourGuestNetworkSSID]" } | Select-Object _id, name, x_passphrase, enabled
 ```
 
 ---
