@@ -1,614 +1,477 @@
 # Multi-language Guest Dashboard for ESPHome
+
 <img src="/resources/overview.jpg" width=80% height=80%>
 
 ---
 
-## WARNING
+## Before You Proceed
 
-**This project stores and exposes your guest network's password in plain text.**
+**This project displays your guest network's Wi-Fi password on an e-paper screen. That is its entire purpose.**
 
-**DO NOT implement if you don't understand the serious risks involved!**
+A few things to understand upfront:
 
-Ubiquiti published a set of best practices for guest networks. [Make sure to understand them](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi).
+1. **The password never reaches Home Assistant — in the UniFi variant.** Credentials live in the ESP device's RAM and in your UniFi controller only. HA is the scheduler and weather source — nothing more. In the no-UniFi variant, the guest password lives in HA's `secrets.yaml` and flows through HA template sensors. See [No UniFi?](#no-unifi) for details.
+2. **Your guest network must be isolated.** This is a baseline requirement, not a suggestion. Guests on a flat network can reach your other devices. Ubiquiti's [best practices guide](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi) is a good starting point.
+3. **Physical access = credential access.** Anyone who can see the screen can read the password. Size your threat model accordingly.
 
----
+If you're comfortable with those three points and have a properly isolated guest network, read on.
 
-## TL;DR.
-### You'll need:
-- UniFi Network
-- Home Assistant running the Unifi Network Integration
-- ESPHome host
-- Waveshare 7.5 inch Display (2-tone grey, 800x480px)
-- Waveshare driver board flashed with ESPHome
-
-### Installation
-- [ ] Isolate your guest network.
-    - [ ] For minimal modifications use SSID "guests".
-- [ ] Add automation rules to HA - `automations.yaml` file.
-- [ ] Declare all the configuration entities on your HA - `configuration.yaml` file.
-- [ ] Copy the `canvas_struct.h` header file to `~/custom_components/` on your ESPHome Host.
-- [ ] Load up the `epaper_guest_dashboard.yaml` file on your ESPHome driver board.
-    - [ ] Adjust the esphome name and friendly name
-    - [ ] Ensure the `secrets.yaml` file includes entries for:
-        - [ ] `wifi_ssid`
-        - [ ] `wifi_password`
-        - [ ] `wifi_ssid_fallback`
-        - [ ] `wifi_password_fallback`
-        - [ ] `homeassistant_api_encryption_key`
-        - [ ] `ota_update_password`
-- [ ] Create an HA dashboard card to control your display from HA (refresh password on demand or turn wifi off).
-
-#### Note that:
-1. MDIs are imported as images.
-
-    You'll need `cairosvg` and `libcairo2-dev` on the ESPHome Host
-
-    ```
-    pip install cairosvg
-    apt install libcairo2-dev
-    ```
-
-2. The Home Assistant QR integration requires `zbar-tools`.
-   
-    On HA's terminal run
-
-    ```
-    apk add zbar
-    ```
-
-3. The `configuration.yaml` file includes all helper entities.
-
-   However, `binary_sensor.guest_display_deep_sleep_flag` does not support an `icon` option.
-
-   This must be done via GUI (e.g., `mdi:sleep`).
-
-And that's it.
+**Proceeding means you accept these risks.**
 
 ---
 
-### Hold on... Can I make this work without Unifi?
+## TL;DR:
 
-Yes, but you'd lose all the automation advantages.
+### You'll need
 
-Also, I wrote the code, but haven't tested it (yet).
+- UniFi controller (UDM / UDM Pro / Cloud Key Gen2+) on your LAN
+- Home Assistant instance
+- ESPHome host (add-on or standalone)
+- Waveshare 7.5" e-paper display (800×480, model 7.50inv2)
+- Waveshare ESP32 Driver Board
 
-Essentially, you'd need to manually define a `wifi_ssid` and a `wifi_password` for your network from Home Assistant.
+### Steps
 
-From then on, the functionality already in place should take care of the rest.
+**UniFi**
+- [ ] Set up and isolate your guest network
+- [ ] Create an API key: *UniFi OS portal → Settings → Admins & Users → API Keys*
+- [ ] Find your guest WLAN's `_id` (browser console trick in [Step 1](#step-1--unifi-setup))
 
-To try it:
+**Home Assistant**
+- [ ] Merge `configuration.yaml` contents into your HA configuration
+- [ ] Copy `template.yaml` to `/homeassistant/template.yaml`
+- [ ] Add the `automations.yaml` entry to your HA automations
+- [ ] Full restart HA
+- [ ] Set icon `mdi:sleep` on `binary_sensor.guest_display_deep_sleep_flag` via GUI
 
-1. **Ignore** the `automations.yaml` file.
-2. Use the files under the `no_unifi` directory.
-3. In HA's `secrets.yaml`, replace `your_ssid` and `your_password` with your own.
-    - Password must be 20 chars long.
+**ESPHome Host**
+- [ ] Install dependencies:
+  ```bash
+  pip install cairosvg
+  apt install libcairo2-dev
+  ```
+- [ ] Copy `canvas_struct.h` into `external_components/` inside your ESPHome config directory
+
+**ESPHome Device**
+- [ ] Populate `secrets.yaml` with the entries listed below
+- [ ] Flash `epaper-guest-dashboard.yaml` to your device
+
+**Required `secrets.yaml` entries:**
+```yaml
+wifi_ssid: "YourMainNetworkSSID"
+wifi_password: "YourMainNetworkPassword"
+wifi_ssid_fallback_01: "epaper-fallback"
+wifi_password_fallback: "your-fallback-password"
+homeassistant_api_encryption_key: "your-ha-api-key"
+ota_update_password: "your-ota-password"
+unifi_api_key: "your-unifi-api-key"
+unifi_controller_url: "https://192.168.1.1"
+unifi_wlan_id: "your-guest-wlan-id"
+guest_ssid: "YourGuestNetworkName"
+```
+
+**Three things worth noting:**
+1. `cairosvg` is required because MDI icons are compiled from SVG at build time — the device itself doesn't need it
+2. `canvas_struct.h` goes in `external_components/`
+3. `template: !include template.yaml` **must be the last key** in `configuration.yaml` — this is a Home Assistant YAML parser requirement; anything after it is silently ignored
 
 ---
 
-With that out of the way, let's dive into the details...
+## No UniFi?
 
+Use the files under `no_unifi/` instead. The display shows the same screen, but the credential pipeline is different: **HA holds the guest password**, not the ESP device.
 
+### How it works
 
-## Project Details
+The guest SSID and password live in **HA's** `secrets.yaml` (`/homeassistant/secrets.yaml`). HA exposes them as template sensors, builds the QR string from them, and the ESP reads everything from HA over WebSocket — the same way it reads weather and time.
 
-### What is the purpose of this project?
+### Setup
 
-My parents love to entertain people. They also love living in an area with limited cell coverage. And they also have no qualms about making their tech problems someone else's tech problems...
+**Home Assistant (`/homeassistant/secrets.yaml`)** — add your guest network credentials here:
+```yaml
+wifi_ssid: "YourGuestNetworkSSID"
+wifi_password: "YourGuestNetworkPassword"
+```
 
-As such, this project has two goals:
-- Present a device-agnostic response to non-tech visitors needing WAN access on a semi-isolated location.
-- Relieve any tech person in the vicinity from having to play the on-call tech support role in any way, shape, or form.
+**HA config** — use `no_unifi/configuration.yaml` in place of the main `configuration.yaml`. Skip `automations.yaml` entirely.
 
-### Who is this project intended for? (and who should stay away!)
+**ESPHome (`secrets.yaml`)** — your management network (what the ESP connects to for HA communication) plus HA API credentials:
+```yaml
+wifi_ssid: "YourMainNetworkSSID"
+wifi_password: "YourMainNetworkPassword"
+wifi_ssid_fallback_01: "ePaper-Display-Fallback"
+wifi_password_fallback: "your-fallback-ap-password"
+homeassistant_api_encryption_key: "your-ha-api-key"
+ota_update_password: "your-ota-password"
+```
+
+Note that `wifi_ssid`/`wifi_password` appear in **both** secrets files but mean different things: HA's copy is the guest network shown on the display; ESPHome's copy is the management network the device connects to.
+
+**ESPHome device** — flash `no_unifi/epaper_guest_dashboard`.
+
+### Trade-offs vs. the UniFi variant
+
+| | UniFi variant | No-UniFi variant |
+|---|---|---|
+| Guest password visible to HA | No | Yes — in `secrets.yaml` and template sensors |
+| Password rotation | Automatic (scheduled + on-demand button) | Manual — edit HA `secrets.yaml` and restart |
+| Requires UniFi controller | Yes | No |
+
+To change the guest password: update `wifi_password` in HA's `secrets.yaml`, then do a full HA restart. The ESP will pick up the new value on its next sensor subscription update.
+
+> This variant has not been fully tested. Treat it as a starting point.
+
+---
+
+# Detailed Setup
+
+## What Does This Thing Actually Do?
+
+An ESP32 e-paper display that shows your guest Wi-Fi credentials and live weather. It updates every 5 minutes and deep-sleeps outside of configured hours.
+
+**The display shows:**
+- Wi-Fi QR code (generated on-device — no cloud, no HA)
+- Guest SSID and formatted 12-character password
+- Current temperature, humidity, UV index
+- 3-hour weather forecast with conditions
+- Sunset time
+- Current time and date (in English, Castellano, Français, Italiano, or Deutsch)
+
+**Home Assistant handles:**
+- Weather data via [met.no](https://api.met.no/) — free, no account needed, coordinates pulled automatically from your `zone.home`
+- Time and date formatting
+- Display language selection
+- Deep sleep scheduling
+- Password rotation schedule (triggers the ESP on a timer)
+
+**The ESP handles:**
+- Talking directly to UniFi at boot to read the current password and network state
+- Generating new passwords and pushing them to UniFi on rotation
+- QR code generation and display rendering
+
+**HA never touches the guest password** (UniFi variant). It only presses a button to tell the ESP to rotate — the ESP does everything else. In the no-UniFi variant, HA holds the credentials and the ESP reads them from HA.
+
+---
+
+## Who Is This For?
 
 People who:
-1. Understand the pros and cons involved in managing convenience vs network security.
-2. Hate captive portals.
-3. Typically entertain friends and family.
-4. Would be comfortable managing a public WiFi network.
+- Entertain guests regularly and are tired of the "what's the WiFi password?" conversation
+- Have a properly isolated guest network
+- Are comfortable editing YAML files
+- Would rather give guests a readable 12-character password than ask them to scan a QR code
 
-If you are ok with those, please skip to [implementation details](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#detailed-implementation).
+If you need a one-click install, this will frustrate you. If you're willing to follow a step-by-step guide, you'll have it running in an afternoon.
 
-Otherwise, please know that the downside of implementing this project far outweighs any gains that you could ever get from it.
+### A Note on the Security Posture
 
-Seriously.
+The HA team specifically chose not to expose guest network passwords as sensors in the UniFi integration. There are good reasons for that decision.
 
-### Anything else you need to know?
+This project takes a different view: the password is already public the moment it's printed on a QR code on your wall — the only meaningful control is physical proximity, which is already required to use your guest network anyway.
 
-#### Fact 1 out of 3
+You do you. But know what you're signing up for.
 
-Let's hit it one more time for the people in the back:
+---
 
-**DISCLAIMER**
-**This project stores and exposes WiFi credentials in plain text!**
+## Hardware
 
-Both on Home Assistant and on the ESPHome device.
+### The Display and Driver Board
 
-Please thoroughly evaluate your own security or consult with a specialist if you are unsure. You know, the kind of people that actually know what they are talking about (unlike myself).
+This project uses:
 
-If you don't understand the risks involved, then do yourself a favor and **avoid using this project!**
+1. [Waveshare 7.5" e-Ink Raw Display](https://www.amazon.com/dp/B075R69T93)
+2. [Waveshare Universal e-Paper Raw Panel Driver Board](https://www.amazon.com/dp/B07M5CNP3B)
 
-#### Fact 2 out of 3
+Both are older models. The current Waveshare catalog has updated versions:
+- [Current display](https://www.waveshare.com/product/displays/e-paper/epaper-1/7.5inch-e-paper.htm) — new revision supports 4 grayscale levels; this project uses black and white only
+- [Current driver board](https://www.waveshare.com/product/displays/e-paper/driver-boards/e-paper-esp32-driver-board.htm) — the GPIO pinout differs from the original board
 
-The HA team in charge of the Unifi Network Integration decided against having the network password stored into a sensor.
+The ESPHome config is wired for the **original board**. If you're using the new Rev. 3 board, update the GPIO substitutions at the top of `epaper-guest-dashboard.yaml`.
 
-There are very good reasons for this.
+#### Original Board — [Wiki](https://www.waveshare.com/wiki/E-Paper_ESP32_Driver_Board#Pins)
 
-In fact, at one point they had enabled this functionality, only to roll it back soon after due to security concerns.
-
-With great power comes great responsibility.
-
-#### Fact 3 out of 3
-
-You should **DEFINITELY** know that the guy who developed the base QR code implementation—which was later adopted by the official Unifi Network integration in HA—had this to say about my idea:
-
-> You do you, but I for one will never do any of the things you just suggested. In fact, given what you just wrote, I question the need for you to even have a QR code at all.
-
-[See for yourself](https://community.home-assistant.io/t/updated-automating-unifi-wifi-ssid-password-changes-and-qr-code-generation/380616/75?u=ozoidemi).
-
-*Harsh?* Perhaps.
-
-*Deservingly so?* Still perhaps.
-
-I just don't agree with shoving a 20-char long random password down my users' throat.
-
-Especially when it is possible that the QR won't work for all of them in the first place - what if users need to connect a regular laptop? Or their camera doesn't work? Or their device simply fails to read the QR?
-
-Besides, the password already exists in plain text the moment it's printed in a QR format, and there is the pesky issue of needing to be in physical proximity to exploit it... so...
-
-Moving on.
-
-**FINAL WARNING - If you decide to proceed, know that you are doing so at your own risk!**
-
-
-
-# Detailed Implementation
-
-## ESPHome Device
-
-### Device Hardware
-
-This project makes use of:
-
-1. [Waveshare 7.5inch e-Ink Raw Display](https://www.amazon.com/dp/B075R69T93).
-2. [Waveshare Universal e-Paper Raw Panel Driver Board](https://www.amazon.com/dp/B07M5CNP3B).
-
-It's worth mentioning that [Waveshare site](https://www.waveshare.com/product/) has updated their product catalog, and these devices are no longer available directly.
-
-The closest ones are:
-
-- [This display](https://www.waveshare.com/product/displays/e-paper/epaper-1/7.5inch-e-paper.htm), which is a new version with 4 grayscale levels. The one used in this project is B&W only.
-
-- [This driver board](https://www.waveshare.com/product/displays/e-paper/driver-boards/e-paper-esp32-driver-board.htm). The pinout definition *could* be different, but I'm not sure. Different pages have different information.
-
-#### Original Board - [Wiki](https://www.waveshare.com/wiki/E-Paper_ESP32_Driver_Board#Pins)
 ```
 PIN  | ESP32 | Description
 ---  | ----- | -----------
-VCC  | 3V3   | Power positive (3.3V power supply input)
+VCC  | 3V3   | Power (3.3V)
 GND  | GND   | Ground
-DIN  | P14   | SPI's MOSI, data input
-SCLK | P13   | SPI's CLK, clock signal input
-CS   | P15   | Chip selection, low active
-DC   | P27   | Data/Command, low for command, high for data
-RST  | P26   | Reset, low active
-BUSY | P25   | Busy status output pin (indicating busy)
+DIN  | P14   | SPI MOSI
+SCLK | P13   | SPI CLK
+CS   | P15   | Chip select (active low)
+DC   | P27   | Data/Command
+RST  | P26   | Reset (active low)
+BUSY | P25   | Busy output
 ```
-#### New Board (Rev. 3) - [Product Page](https://www.waveshare.com/product/displays/e-paper/driver-boards/e-paper-esp32-driver-board.htm)
+
+#### New Board (Rev. 3) — [Product Page](https://www.waveshare.com/product/displays/e-paper/driver-boards/e-paper-esp32-driver-board.htm)
+
 ```
 PIN  | ESP32 | Description
 ---  | ----- | -----------
-VCC  | 3V3   | Power positive (3.3V power supply input)
+VCC  | 3V3   | Power (3.3V)
 GND  | GND   | Ground
-DIN  | P12   | SPI's MOSI, data input
-SCK  | P15   | SPI's CLK, clock signal input
-CS   | P16   | Chip selection, low active
-DC   | P11   | Data/Command, low for command, high for data
-RST  | P10   | Reset, low active
-BUSY | P9    | Busy status output pin (indicating busy)
-```
-At least for my HW revision, the wiki documentation works perfectly well.
-
-### Flashing the device
-
-This could be as fun as having a dentist appointment for a root canal while suffering from explosive diarrhea.
-
-Hopefully your fun won't be of *that* kind.
-
-ESP32 devices can be very temperamental when it comes to ESPHome flashing. One way around is to connect the soon-to-be-flashed device directly to the ESPHome Host.
-
-Since my host is a Proxmox LXC, I needed a USB passthrough to the container.
-
-If you find yourself in that situation, I hope you read my advice about [privileged containers](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#privileged-container-type-and-disk-size).
-
-Check the [troubleshooting](https://github.com/ozoidemi/ePaper_guest_dashboard/tree/main#troubleshooting) section if you want to know more about my own installation, or if you need further assistance.
-
-### Programming the display
-
-#### Home Assistant
-
-##### Automations.yaml
-
-On HA's file editor, search for the `/homeassistant/automations.yaml` file and add the two entries from the automations.yaml project file.
-
-If you don't have the file editor, you can add it from the add-on store (*Settings -> Add-ons -> Add-on store*).
-
-Also, if you don't know exactly *where* to add these entries to the file, know that the project file you are seeing is my entire automations file at this point - you can just copy and paste as-is.
-
-The first entry takes a snapshot of the QR code (`image.guests_qr_code`) and stores it in `/config/www/wifi_qr.png`.
-
-The second ensures that the guest network password is updated automatically at least weekly. If you need a different schedule, then adjust accordingly. It will not break anything, and you could easily remove it altogether.
-
-#### Configuration.yaml
-
-Back into the file editor, go to `/homeassistant/configuration.yaml`.
-
-Here, load up all the entities into your HA's `configuration.yaml` file.
-
-You should see the following entries, each with a different number of elements:
-
-1. `image_processing`.
-2. `input_select`.
-3. `input_boolean`.
-4. `binary_sensor`.
-5. `template`.
-
-If you already have any of these sections, just append the new entries at the end of each, and make sure to respect the spacing.
-
-The file includes all the entities that you will need. Other than adding an icon to `guest_display_deep_sleep_flag`, you won't need to create nor modify any other entities via the GUI.
-
-#### CLI
-The final step is to install `zbar-tools`, which are necessary for the [QR code integration](https://www.home-assistant.io/integrations/qrcode) to work.
-
-To do so, just use the Terminal add-on.
-
-If you don't have it already, then go to *Settings -> Add-ons -> Add-on Store* and look for the Advanced SSH & Web Terminal.
-
-Once it's up, run the following command.
-
-```
-apk add zbar
+DIN  | P12   | SPI MOSI
+SCK  | P15   | SPI CLK
+CS   | P16   | Chip select (active low)
+DC   | P11   | Data/Command
+RST  | P10   | Reset (active low)
+BUSY | P9    | Busy output
 ```
 
-That should be all from the Home Assistant side.
+---
 
-### ESPHome Host
+## Step 1 — UniFi Setup
 
-1. First open the CLI on your ESPHome host.
+### Create an API Key
 
-    - For me, that means getting to my PVE console, selecting the LXC container, and then opening the console for the container.
+The ESP communicates with your UniFi controller directly using an API key — no UniFi HA integration needed.
 
-2. Go to the `config/custom_components` directory.
+1. Log into your **UniFi OS portal** (the top-level portal at your controller IP, not the Network app inside it)
+2. Go to *Settings → Admins & Users → API Keys*
+3. Click *Create API Key*, give it a name, and copy the key — you won't see it again after closing the dialog
 
+### Find Your Guest WLAN ID
+
+The WLAN ID (`_id`) is a unique internal identifier for your guest network. The ESP uses it to make sure it's only ever touching the right network — regardless of what the SSID is called.
+
+While logged into the UniFi dashboard, open your browser's developer console (`F12` → Console tab) and run:
+
+```javascript
+fetch('/proxy/network/api/s/default/list/wlanconf')
+  .then(r => r.json())
+  .then(d => d.data.forEach(n => console.log(n._id, n.name)))
+```
+
+You'll see a list of network IDs and names. Copy the `_id` for your guest network — it looks like a 24-character hex string.
+
+---
+
+## Step 2 — Home Assistant Setup
+
+You'll need the **File Editor** add-on to edit config files from the browser. If you don't have it: *Settings → Add-ons → Add-on Store → File Editor → Install*.
+
+### configuration.yaml
+
+Open `/homeassistant/configuration.yaml` in the File Editor.
+
+Add the contents of the project's `configuration.yaml` to your existing file. If you already have sections like `input_select:` or `input_boolean:`, append the new entries inside the existing sections — don't create duplicate top-level keys.
+
+What this adds:
+- **`rest:`** block — pulls weather data from met.no every 30 minutes. No API key or account needed. Coordinates are read automatically from your `zone.home` entity.
+- **`input_select:`** — language selector (English, Castellano, Français, Italiano, Deutsch)
+- **`input_boolean:`** — three display control flags (border debug, grid debug, prevent deep sleep)
+- **`binary_sensor:`** — a time-of-day sensor that activates deep sleep between 9:58 PM and 7:58 AM
+- **`template: !include template.yaml`** — must be the **last line** in the file
+
+> **Why must `template:` be last?** Home Assistant's YAML loader treats `!include` as a stream continuation — the included file is parsed as part of the same document. Any keys after it end up outside the parse stream and are silently dropped. Put it last and this is never an issue.
+
+### template.yaml
+
+Copy the project's `template.yaml` to `/homeassistant/template.yaml`.
+
+This file defines the formatted time, date, sunset time, sleep message, and multilingual day/month names that the display renders. It references `sun.sun` (universally available in HA) and the `guest_display_language` input select.
+
+### automations.yaml
+
+Open `/homeassistant/automations.yaml` and add the single entry from the project's `automations.yaml`.
+
+This fires every Thursday at 8:55 PM and presses the ESP's rotate button — the ESP then generates a new password and pushes it to UniFi. Adjust the schedule to your liking, or remove it entirely if you prefer to rotate manually.
+
+### Restart and Finish
+
+Do a **full HA restart** after saving all files (*Settings → System → Restart*). A config reload is not enough for the `rest:` sensors to register.
+
+After restarting, go to *Settings → Devices & Services → Entities*, search for `guest_display_deep_sleep_flag`, open it, click the gear icon, and set the icon to `mdi:sleep`. This is the one thing the YAML config can't do for you.
+
+### Stale Entities
+
+If you previously had a different weather setup (HA weather integration, template-based forecast sensors, etc.), you may have stale entities in your registry with names like `current_temperature` or `forecast_condition_1h`. These can silently conflict with the new REST sensors.
+
+After the full restart, check *Settings → Devices & Services → Entities* and search for each weather sensor name. If you see two entries with the same name but different integrations (e.g., one `template` and one `rest`), delete the stale one. Restart once more and the REST sensors will claim the correct entity IDs.
+
+---
+
+## Step 3 — ESPHome Host Setup
+
+### Install Dependencies
+
+MDI icons are rendered from SVG files at compile time. You need two packages installed on your ESPHome host:
+
+```bash
+pip install cairosvg
+apt install libcairo2-dev
+```
+
+If you're running ESPHome as a Home Assistant add-on, open a terminal (*Settings → Add-ons → Advanced SSH & Web Terminal*) and run these there.
+
+You only need to do this once. Subsequent device updates don't require reinstalling.
+
+### Add canvas_struct.h
+
+`canvas_struct.h` defines the layout structure for the display grid. It needs to be accessible to the ESPHome compiler.
+
+1. Navigate to your ESPHome config directory (typically `/config/esphome/` on the add-on)
+2. Create the `external_components` subdirectory if it doesn't exist:
+   ```bash
+   mkdir -p external_components
    ```
-   cd config/custom_components
+3. Create the file and paste in the contents of `canvas_struct.h`:
+   ```bash
+   nano external_components/canvas_struct.h
+   ```
+   Save with `Ctrl+S`, exit with `Ctrl+X`.
+4. Verify:
+   ```bash
+   cat external_components/canvas_struct.h
    ```
 
-   If you don't have it, create first with
+---
 
-   ```
-   mkdir ~/config/custom_components
-   cd config/custom_components
-   ```
+## Step 4 — ESPHome Device Setup
 
-4. Copy the `canvas_struct.h` file into that directory.
-    
-    - If you don't know how, you can:
-        
-        - Create a new file called `canvas_struct.h'.
-            
-          ```
-          nano canvas_struct.h
-          ```
+### Populate secrets.yaml
 
-        - Paste the contents of the `canvas_struct.h' project file.
-        - And save (ctrl + s, ctrl + x).
+In your ESPHome config directory, open or create `secrets.yaml` and add:
 
-5. Verify that the content of the file is correct using the `cat` command.
+```yaml
+# Main network — this is what the ESP connects to for HA communication
+# This is NOT your guest network
+wifi_ssid: "YourMainNetworkSSID"
+wifi_password: "YourMainNetworkPassword"
 
-    ```
-    cat canvas_struct.h
-    ```
+# Fallback hotspot — used if the ESP can't reach your main network
+wifi_ssid_fallback_01: "epaper-fallback"
+wifi_password_fallback: "your-fallback-password"
 
-Two down. One more to go.
+# Home Assistant API
+homeassistant_api_encryption_key: "your-ha-api-key"
 
-### ESPHome Device
+# OTA updates
+ota_update_password: "your-ota-password"
 
-Load up the `epaper-guest-display.yaml` file onto your device's yaml. 
+# UniFi — from Step 1
+unifi_api_key: "your-unifi-api-key"
+unifi_controller_url: "https://192.168.1.1"
+unifi_wlan_id: "your-24-char-wlan-id"
+guest_ssid: "YourGuestNetworkName"
+```
 
-Make sure to update the following substitutions / relevant values at the beginning:
+The `wifi_ssid` and `wifi_password` here are for your **management network** — the network the ESP uses to talk to HA and UniFi. These are completely separate from the guest credentials the display shows.
 
-1. Update `guest_ssid_switch: "switch.guests"` to match the SSID for your guest wifi.
+### Flash the Device
 
-   `guest_ssid_switch: "switch.[your_guest_network_ssid]"`
+1. Open the ESPHome dashboard in your browser
+2. Create a new device (or open an existing one)
+3. Paste the contents of `epaper-guest-dashboard.yaml` into the YAML editor
+4. Optionally update `name` and `friendly_name` at the top of the file
+5. Click Install
 
-3. Make sure to define the following entries on your `secrets.yaml` file:
+The first flash must be done over USB. Subsequent updates can be done over-the-air.
 
-    1. `homeassistant_api_encryption_key` for your HA API.
+### What to Expect on First Boot
 
-    2. `ota_update_password` for your OTA functionality.
+On first connection to Home Assistant, the ESP:
+1. Calls the UniFi API to read the current password and network state
+2. Renders the display with everything it has
 
-    3. `wifi_ssid` and `wifi_password` for your Wifi
+Weather data (temperature, humidity, UV, forecast) arrives from HA within seconds of connecting. If the display shows zeros or blanks on the weather section, wait for the next 5-minute refresh cycle — HA's REST sensors need one full 30-minute poll to have data ready, and the first display render may happen before that.
 
-        - These define the wifi network your ESPHome device will connect to.
-
-        - This is NOT your guest wifi!
-
-        - The credentials **MUST** be different from the credentials that will be displayed on your screen.
-
-        - Also, they **MUST** be kept **completely confidential**.
-
-    4. `wifi_ssid_fallback` and `wifi_password_fallback` for your Fallback Hotspot.
-
-4. On the `esphome` entry, look at the `on_boot` lambda.
-
-    - Make sure to adjust `canvas.width` and `canvas.height` if your screen isn't 800x480 px. 
-
-Then just install, kick back, and wait for the screen to retrieve and load up all the info you have.
-
-
-Congrats! you should now have a functional display to present to your guests!
-
-
+---
 
 # Troubleshooting
 
-## I don't get why this is so convoluted. Can't we just pass over the existing QR and be done with it?
+## Sensors exist in HA but show unavailable
 
-Maybe? Regretfully I didn't find another way.
- 
-Even when the UI Network Integration generates a QR code for us automatically, it:
+You likely have stale entities from a previous configuration conflicting with the new REST sensors. See [Stale Entities](#stale-entities) above.
 
-1. Only exists in memory.
-2. Is much harder to use than what you might think.
+## ESP shows blank forecast or zero temperatures on first boot
 
-I won't go into all the details, except for saying that I did NOT find a way to use the in-memory QR without storing it.
+The weather values are pushed from HA to the ESP via WebSocket subscription. If the display renders before HA has pushed all sensor states, the canvas arrays hold their defaults (empty string, 0.0). Trigger a manual display update or wait for the next 5-minute refresh cycle.
 
-If you want to try a different approach, you can implement a custom component using the rolled back PR from the UI Network Integration - this project is publicly available.
+## Flashing the ESP over USB (Proxmox LXC)
 
-## What is my installation, you ask?
+### Privileged Container and Disk Size
 
-### HA/ESPHome
+When installing the ESPHome LXC via the community helper scripts, choose Advanced settings and select:
+- Container type: **Privileged** (required for USB passthrough)
+- Disk size: **8 GB minimum** (4 GB is not enough for compile artifacts)
 
-A Lenovo Tiny running Proxmox 8. Everything else is built on top of it.
+![Advanced settings](/resources/pve_advanced.png)
+![Disk size](/resources/pve_disk_size.png)
+![Privileged container](/resources/pve_privileged.png)
 
-Instructions can be found [here](https://community.home-assistant.io/t/installing-home-assistant-os-using-proxmox-8/201835).
+### Adding USB Passthrough
 
-Also, check out the amazing community managing [tteck's scripts](https://github.com/community-scripts/ProxmoxVE). He regretfully passed away in late 2024, but his scripts definitely live on.
-
-Here is the [direct link](https://community-scripts.github.io/ProxmoxVE/scripts) to the actual scripts.
-
-At a minimum, make sure to run the following scripts post Proxmox installation.
-1. [Post VE Install](https://community-scripts.github.io/ProxmoxVE/scripts?id=post-pve-install)
-2. [Update Repo](https://community-scripts.github.io/ProxmoxVE/scripts?id=update-repo)
-3. [HAOS Installer](https://community-scripts.github.io/ProxmoxVE/scripts?id=haos-vm)
-4. [ESPHome Installer](https://community-scripts.github.io/ProxmoxVE/scripts?id=esphome)
-
-Notice that default options are typically all you need when going through the helper scripts... ***except*** when installing ESPHome.
-
-#### Privileged Container Type and Disk Size
-
-There are cases in which you'll need USB passthrough access to the LXC. If you don't choose a _Privileged_ container type during set up, you won't get it.
-
-To do so, just choose the advanced settings when the installer prompts you.
-
-![Image](/resources/pve_advanced.png)
-
-Then choose all the defaults, except for the disk size and the container type.
-
-For the disk size, you should allocate a minimum of 8GB, instead of the default 4GB. This isn't related to the container type, but will solve other issues.
-
-![Image](/resources/pve_disk_size.png)
-
-For the container type, simply choose "privileged".
-
-![Image](/resources/pve_privileged.png)
-
-### Network
-
-Running a UXG-Pro with Unifi Network 9.0.114 on a local CK-Gen2. Also multiple U6+/U6 lite APs, and multiple USW-24-POE switches.
-
-My guest network isolates all devices from one another within the same VLAN, and prevents them from accessing any other VLANs.
-
-Ubiquiti provides some advice around [best practices for guest networks](https://help.ui.com/hc/en-us/articles/23948850278295-Best-Practices-Guest-WiFi).
-
-For the purposes of this project, I'll assume your guest network SSID is `guests`.
-
-## My Network infrastructure is based on Unifi, but I don't have the integration.
-
-You can install it by following the instructions on the Home Assistant Unifi Network integration [page](https://www.home-assistant.io/integrations/unifi/).
-
-Once the integration is up and running in HA, go to *Settings -> Devices & Services -> Entities*.
-
-On the search box, search for "guests" (remember? the guest network SSID we'd assume moving forward?).
-
-You will see a few entities here.
-- `sensor.guests`
-- `switch.guests`
-- `image.guests_qr_code`
-- `button.guests_regenerate_password`
-
-The latter two entities should be disabled if you haven't touch them.
-
-To enable them, click on the entity, then click on the cog in the upper right to go to settings, and then enable the entities. Repeat for the second one.
-
-Upon enablement, Home Assistant can now automatically generate a QR code with the SSID and password needed to log into your guests network. At first, it will have whatever password you assigned to your network.
-
-However, your button entity will now enable you to create and apply a 20-char random password to your guest network without any work on your part. Just remember this is a fixed string, and there is nothing you can (easily) do to adapt it to better suit your needs.
-
-## I'm using a LXC for the ESPHome host, but I need more help to connect my ESPHome device directly to it.
-
-Let's try forcing the USB passthrough.
-
-Go to your web browser and type your Proxmox VE IP address, with port 8006.
-
-If you have a typical network address, this should look like `https://192.168.1.X:8006`.
-
-Once in your PVE environment, go to the PVE shell and type `lsusb`. You should get something like this:
-
-![Image](/resources/pve_lsusb.png)
-
-Notice the QinHeng device. This is my ESP32 driver board.
-
+From the Proxmox shell, identify your device:
+```bash
+lsusb
+```
 ```
 Bus 001 Device 002: ID 1a86:55d3 QinHeng Electronics USB Single Serial
 ```
 
-Now go to your ESPHome container and go to *Resources -> Add -> Device Passthrough*.
+Go to your ESPHome LXC → *Resources → Add → Device Passthrough* and enter the device path from the bus and device numbers above.
 
-![Image](/resources/esphome_device_passthrough.png)
+![Device passthrough](/resources/esphome_device_passthrough.png)
+![Device path](/resources/esphome_device_path.png)
+![Device summary](/resources/esphome_device_summary.png)
 
-On the dialog, type the info from your device where "dev" is the number of the device Bus (001), and "xyz" is the number of the device itself (002).
+## esp-idf framework won't compile
 
-![Image](/resources/esphome_device_path.png)
+This project uses the **arduino** framework. If you've switched to esp-idf for any reason, switch back.
 
-You should now see something like this:
+If compilation fails even on arduino, your ESPHome host may be out of disk space. 8 GB minimum is required. If you need to add space on Proxmox:
 
-![Image](/resources/esphome_device_summary.png)
+*ESPHome LXC → Resources → Root Disk → Volume Action → Resize*
 
-If at this point you still don't have USB passthrough to your ESPHome Host, there is something else going on. Maybe a bad device, or a bad port.
+![Root disk](/resources/pve_root_disk.png)
+![Volume resize](/resources/pve_volume_resize.png)
+![Resize dialog](/resources/pve_resize_dialog.png)
 
-I won't cover further passthrough troubleshooting here.
-
-## For the love of all that's sacred, I cannot make this work using the `esp-idf` esp32 framework type.
-
-This one is a pain.
-
-First, make sure that your ESPHome host has at least 8GB of disk space. I found the hard way that 4GB is simply not enough to download and compile all the platformio packages needed for this framework type.
-
-If your ESPHome doesn't have the minimum 8GB, and you are using PVE, you can add the extra disk as follows:
-
-Follow the same instructions above to login into your PVE environment, and click on your ESPHome LXC.
-
-Go to *Resources -> Root Disk*.
-
-![Image](/resources/pve_root_disk.png)
-
-thenk Click on *Volume Action -> Resize*.
-
-![Image](/resources/pve_volume_resize.png)
-
-Finally type in the amount of disk you want to **add**. So if you already had 4GB, you should type in "4" to get to the 8GB you want.
-
-![Image](/resources/pve_resize_dialog.png)
-
-Reboot your LXC for good hygiene and you'll be ready for the next step.
-
-Now go to your ESPHome LXC console, go to your platformio directory, and ruthlessly erase all of its contents with `rm -rf *`. Just be careful - this is quite a dangerous command to execute on a wrong directory.
-
-The platformio directory is hidden so, unless you are using `ls -la` on your root directory, you won't see it.
-
-```
+After resizing, clear the platformio cache to force a clean rebuild:
+```bash
 cd ~/.platformio
 rm -rf *
 ```
 
-Another safer option is:
+## NVS storage error
 
-```
-cd ~
-rm -rf .platformio
-```
+After many flashes, the device's Non-Volatile Storage can fill up. If you see `ESP_ERR_NVS_NOT_ENOUGH_SPACE`:
 
-This will force the ESPHome Host to start off with a clean slate - it will redownload and recompile all of its platformio packages, this time with the right amount of space needed to succeed.
-
-## I'm getting an ESP_ERR_NVS_NOT_ENOUGH_SPACE error!
-
-After multiple uploads, your device's Non-Volatile Storage might need some housekeeping.
-
-If you ever get this NVS error during the compilation and programming of your ESPHome device, then connect directly to your ESPHome Host and use the following commands.
-
-```
+```bash
 dd if=/dev/zero of=nvs_zero bs=1 count=20480
 esptool.py --chip esp32 --port /dev/ttyACM0 write_flash 0x009000 nvs_zero
 ```
 
-The first command writes a file of null bytes (the typical size of your NVS) on the current directory, naming it nvs_zero.
-
-The second command uses your USB passthrough connection to write the file on your ESPHome device at 0x009000, which is the typical address for the NVS file.
-
-You'll need to replace `/dev/ttyACM0` with your own USB port.
-
-Notice that you could get an error with the second command if you haven't installed esptools already. To fix that, make sure to install pip and esptools in the ESPHome host.
-
-```
-apt upgrade
-apt install pip
+Replace `/dev/ttyACM0` with your device's actual port. If `esptool` isn't installed:
+```bash
+apt upgrade && apt install pip
 pip install --upgrade esptool
 ```
 
-
-
+---
 
 # Bonus
 
-## Presentation
+## Stand Ideas
 
-There are many ideas around how to present your screen. From handmade stands, to Ikea frames and everything in between.
-
-In my mind, this project would benefit from a stand like this:
+There are many ways to present the display. The approach that appeals most to me is a minimal stand with a recessed USB-C connector facing downward — no visible cables, clean finish.
 
 <img src="/resources/stand.png" width=70% height=70%>
 
-https://www.hackster.io/lmarzen/esp32-e-paper-weather-display-a2f444
+[Original by lmarzen](https://www.hackster.io/lmarzen/esp32-e-paper-weather-display-a2f444)
 
-What I'd do differently though, is the USB-C connector embedded in the back of base.
+The Sonos-style downward-facing connector does this well:
 
-Instead, I would either place the connector facing downwards (like the power plug of a Sonos One speaker) or I'd offset it into the base at the bottom (which would end up looking almost the same as the first picture below).
-
-If you haven't seen something like that, it looks super clean!
-
-FYI: These pictures are here just to illustrate the kind of look I'd go after. They aren't mine.
-
-![Image](/resources/sonos_example1.jpg)
-
+![](/resources/sonos_example1.jpg)
 <img src="/resources/sonos_example2.jpg" width=50% height=50%>
+![](/resources/sonos_example3.jpg)
 
-![Image](/resources/sonos_example3.jpg)
+*(Reference images, not mine.)*
 
-## TODO
-
-As this is the first half-decent version of this project, I still have a lot of work to do.
-
-Things I'm thinking of:
-
-- Implement the rolled back custom component for the UI integration
-
-    - That would get rid of almost all the To Do's below.
-
-- Automate deleting the QR snapshot from HA.
-
-- Clean up the code.
-
-    - There is more flexibility than it is needed, so the code can be difficult to follow.
-
-    - Lots of unused variables, or poorly defined ones (looking at you canvas_struct.h!).
-      
-- Implement the pool temperature logic
-
-    - I haven't constructed it so I don't have the sensor!
-
-- Expand this document ot include a Home Assistant Card to manage/monitor meaningful variables.
-
-- Rework the prevent_deep_sleep logic.
-
-    - I've been testing it a lot and I don't think it is working like it should.
-
-- Stream-line the ESP messages.
-
-    - Talking about a mess... There is no consistency whatsoever, and many messages are repeated.
-
-- Fully test the **no-unifi** version.
-
-    - That needs much more attention than what I've given
- 
-- Change the whole approach to use the existing (but removed) Unifi integration component!
-
-
+---
 
 # References
-
-There are lots of comments, articles, projects, and tools that allowed me to develop this little solution. Either through inspiration, or problem solving. They are all worth taking a look at.
 
 **Inspiration**
 - https://github.com/Madelena/esphome-weatherman-dashboard
@@ -618,23 +481,16 @@ There are lots of comments, articles, projects, and tools that allowed me to dev
 - https://www.printables.com/model/994770-waveshare-75-e-ink-display-insert-for-ikea-rodalm/files
 
 **Tools**
-- https://moqups.com/
-
-    - Excellent tool to design this type of mockups
-
-- claude.ai
-
-    - Seriously, incredibly easy to define templates with it.    
+- https://moqups.com/ — mockup and layout design
+- claude.ai — useful for template development
 
 **Problem Solving**
 - https://community.home-assistant.io/t/where-are-helpers-stored-when-created-in-the-gui/347556
 - https://pocketables.com/2022/01/how-to-format-that-wifi-qr-code-in-plain-text.html
 - https://tatham.blog/2021/02/06/esphome-batteries-deep-sleep-and-over-the-air-updates/
 - https://community.home-assistant.io/t/astimezone-output-differs-from-server-local-time-zone/850071/2
-- https://community.home-assistant.io/t/error-unable-to-import-component-image-on-e-paper-display/712496/5
 - https://community.home-assistant.io/t/updated-automating-unifi-wifi-ssid-password-changes-and-qr-code-generation/380616/87
 - https://community.home-assistant.io/t/unifi-network-integration-official-thread/486308/79
 - https://community.home-assistant.io/t/definitive-guide-to-weather-integrations/736419
 - https://www.reddit.com/r/Esphome/comments/1iwroxi/esphome_github_and_licensing/
-
-Among many others!
+- https://api.met.no/doc/locationforecast/datamodel
