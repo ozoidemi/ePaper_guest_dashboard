@@ -14,6 +14,10 @@
 # PS: The above is the board fixed connection, with no additional operation by the user. 
 
 substitutions:
+  # Device identity
+  name: epaper-display-driver
+  friendly_name: ePaper Display Driver
+
   # Display Pins
   gpio_spi_clk_pin: "13"
   gpio_spi_mosi_pin: "14"
@@ -25,15 +29,24 @@ substitutions:
   # Display refresh in minutes
   screen_refresh_timer: "5"
   
-  # Guest SSID switch
-  # replace with your entity name
-  # typically switch.[guest_network_ssid] 
-  guest_ssid_switch: "switch.guests"
+  # UniFi API
+  unifi_api_key: !secret unifi_api_key
+  unifi_controller_url: !secret unifi_controller_url
+  unifi_wlan_id: !secret unifi_wlan_id
+  guest_ssid: !secret guest_ssid
 
 # Enable Home Assistant API
 api:
   encryption:
     key: !secret homeassistant_api_encryption_key
+  on_client_connected:
+    - lambda: |-
+        if (!id(boot_settled) && !id(show_loading_screen)) {
+          id(show_loading_screen) = true;
+          id(epaper75_01).update();
+          id(last_display_refresh) = millis();
+        }
+    - script.execute: fetch_network_state
 
 # Over-The-Air updating
 ota:
@@ -49,7 +62,7 @@ wifi:
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: !secret wifi_ssid_fallback
+    ssid: !secret wifi_ssid_fallback_01
     password: !secret wifi_password_fallback
 
 globals:
@@ -58,19 +71,56 @@ globals:
     type: bool
     restore_value: false
     initial_value: 'false'
-  
+
   # QR Code size for placement calculations
   - id: qr_size_sensor
     type: int
     restore_value: false
     initial_value: "0"
 
+  # Guest Wi-Fi password — populated from UniFi on boot, updated after rotation
+  # Lives in RAM only — no NVS, always read fresh from UniFi at startup
+  - id: guest_password
+    type: std::string
+    restore_value: false
+    initial_value: '""'
+
+  # Guest network enabled state — read from UniFi on boot
+  - id: guest_network_enabled
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  # Timestamp of last display refresh (millis) — used as timing gate for password rotation
+  - id: last_display_refresh
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+
+  # Set to true after the boot settling refresh fires — gates debug flag callbacks
+  - id: boot_settled
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  # True while the loading screen is displayed during boot
+  - id: show_loading_screen
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
+  # Set when Refresh #2 lands in minute X4/X9 — suppresses the following 5-min timer tick
+  - id: skip_next_timer
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+
 esphome:  
   name: "${name}"
   friendly_name: "${friendly_name}"
   # Import canvas auxiliary values and structures
   includes: 
-    - custom_components/canvas_struct.h
+    - external_components/canvas_struct.h
   # Canvas Initialization
   on_boot: 
     - priority: 650
@@ -158,12 +208,16 @@ esphome:
                     canvas.forecast_weather.height);
             //
             // Canvas initialized.
-            ESP_LOGD("Canvas Initialization", "Canvas Initialized.");      
+            ESP_LOGD("Canvas Initialization", "Canvas Initialized.");
+
 
 esp32:
   board: esp32dev
   framework:
-    type: esp-idf
+    type: arduino
+    advanced:
+      minimum_chip_revision: "3.1"
+      sram1_as_iram: true
 
 deep_sleep:
   id: deep_sleep_control
@@ -178,7 +232,7 @@ logger:
   # DEBUG
   # VERBOSE
   # VERY_VERBOSE
-  #level: VERY_VERBOSE
+  level: DEBUG
   
 captive_portal:  
 
@@ -320,99 +374,74 @@ image:
     type: BINARY
     resize: 50x50
   
-  # Weather Forecast Conditions
-  # see https://www.home-assistant.io/integrations/weather/ for condition mapping
-  # clear-night
-  - file: mdi:weather-night
-    id: icon_weather_night
-    type: BINARY
-    resize: 50x50
-  
-  # cloudy
-  - file: mdi:weather-cloudy
-    id: icon_weather_cloudy
-    type: BINARY
-    resize: 50x50
-      
-  # fog
-  - file: mdi:weather-fog
-    id: icon_weather_fog
-    type: BINARY
-    resize: 50x50
-  
-  # hail
-  - file: mdi:weather-hail
-    id: icon_weather_hail
-    type: BINARY
-    resize: 50x50
-  
-  # lightning
-  - file: mdi:weather-lightning
-    id: icon_weather_lightning
-    type: BINARY
-    resize: 50x50
-  
-  # lightning-rainy
-  - file: mdi:weather-lightning-rainy
-    id: icon_weather_lightning_rainy
-    type: BINARY
-    resize: 50x50
-  
-  # partlycloudy
-  - file: mdi:weather-partly-cloudy
-    id: icon_weather_partly_cloudy
-    type: BINARY
-    resize: 50x50
-  
-  # pouring
-  - file: mdi:weather-pouring
-    id: icon_weather_pouring
-    type: BINARY
-    resize: 50x50
-  
-  # rainy
-  - file: mdi:weather-rainy
-    id: icon_weather_rainy
-    type: BINARY
-    resize: 50x50
-  
-  # snowy
-  - file: mdi:weather-snowy
-    id: icon_weather_snowy
-    type: BINARY
-    resize: 50x50
-  
-  # snowy-rainy
-  - file: mdi:weather-snowy-rainy
-    id: icon_weather_snowy_rainy
-    type: BINARY
-    resize: 50x50
-  
-  # sunny
+  # Weather forecast condition icons — MDI, optimized for monochrome e-paper
+  # MDI outlines render cleanly as BINARY; met.no PNGs are color-designed and collapse to noise
+  # https://pictogrammers.com/library/mdi/category/weather/
   - file: mdi:weather-sunny
-    id: icon_weather_sunny
+    id: icon_wx_sunny
     type: BINARY
     resize: 50x50
-  
-  # windy
-  - file: mdi:weather-windy
-    id: icon_weather_windy
+  - file: mdi:weather-night
+    id: icon_wx_night
     type: BINARY
     resize: 50x50
-  
-  # windy-variant (windy-cloudy)
-  - file: mdi:weather-windy-variant
-    id: icon_weather_windy_variant
+  - file: mdi:weather-partly-cloudy
+    id: icon_wx_partly_cloudy
     type: BINARY
     resize: 50x50
-  
-  # exceptional
-  # exceptional has no clear mdi icon in store
-  - file: mdi:alert
-    id: icon_weather_exceptional
+  - file: mdi:weather-night-partly-cloudy
+    id: icon_wx_night_partly_cloudy
     type: BINARY
     resize: 50x50
-  
+  - file: mdi:weather-cloudy
+    id: icon_wx_cloudy
+    type: BINARY
+    resize: 50x50
+  - file: mdi:weather-fog
+    id: icon_wx_fog
+    type: BINARY
+    resize: 50x50
+  - file: mdi:weather-partly-rainy
+    id: icon_wx_partly_rainy
+    type: BINARY
+    resize: 50x50
+  - file: mdi:weather-rainy
+    id: icon_wx_rainy
+    type: BINARY
+    resize: 50x50
+  - file: mdi:weather-pouring
+    id: icon_wx_pouring
+    type: BINARY
+    resize: 50x50
+  - file: mdi:weather-partly-lightning
+    id: icon_wx_partly_lightning
+    type: BINARY
+    resize: 50x50
+  - file: mdi:weather-lightning-rainy
+    id: icon_wx_lightning_rainy
+    type: BINARY
+    resize: 50x50
+  - file: mdi:weather-partly-snowy-rainy
+    id: icon_wx_partly_snowy_rainy
+    type: BINARY
+    resize: 50x50
+  - file: mdi:weather-snowy-rainy
+    id: icon_wx_snowy_rainy
+    type: BINARY
+    resize: 50x50
+  - file: mdi:weather-partly-snowy
+    id: icon_wx_partly_snowy
+    type: BINARY
+    resize: 50x50
+  - file: mdi:snowflake
+    id: icon_wx_snowflake
+    type: BINARY
+    resize: 50x50
+  - file: mdi:weather-snowy-heavy
+    id: icon_wx_heavy_snow
+    type: BINARY
+    resize: 50x50
+
   # UV Index Representation
   # All other represented by filled gauge
   # UV Extreme (11+)
@@ -437,14 +466,17 @@ time:
     on_time:  
       - seconds: 5
         minutes: /$screen_refresh_timer
-        then: 
+        then:
           - lambda: |-
-              // Perform screen update
               if (id(deep_sleep_activated).state) {
                 ESP_LOGI("time", "Deep Sleep Cycle...");
+              } else if (id(skip_next_timer)) {
+                id(skip_next_timer) = false;
+                ESP_LOGI("time", "Skipping timer -- boot Refresh #2 just happened");
               } else {
                 ESP_LOGI("time", "Screen updated");
                 id(epaper75_01).update();
+                id(last_display_refresh) = millis();
               }
 
 http_request:
@@ -452,27 +484,24 @@ http_request:
 
 sensor: 
   # Current and forecasted weather data retrieved from Home Assistant
-  # Get current temperature
+  # Get current temperature — via HA template sensor (auto-detects weather entity)
   - platform: homeassistant
     id: ha_temperature
-    entity_id: weather.forecast_home
-    attribute: temperature
+    entity_id: sensor.current_temperature
     internal: True
     name: "Current Temperature"
 
-  # Get current humidity
+  # Get current humidity — via HA template sensor (auto-detects weather entity)
   - platform: homeassistant
     id: ha_humidity
-    entity_id: weather.forecast_home
-    attribute: humidity
+    entity_id: sensor.current_humidity
     internal: True
     name: "Current Humidity"
 
-  # Get current UV index (as number)
+  # Get current UV index — via met.no locationforecast REST sensor in HA
   - platform: homeassistant
     id: ha_uv_index
-    entity_id: weather.forecast_home
-    attribute: uv_index
+    entity_id: sensor.uv_index
     internal: True
     name: "Current UV Index Value"
 
@@ -518,31 +547,19 @@ sensor:
             canvas.forecast_info.temp_h[2] = id(temp_3h).state;
 
 binary_sensor:
-  # Switch data retrieved from Home Assistant
-  # Identifies whether guest wifi is On/Off
-  - platform: homeassistant
-    id: wifi_status
-    entity_id: $guest_ssid_switch
-    internal: True
-    name: "WiFi On/Off"
-    on_state:
-      then:
-        - lambda: |-
-            // Perform screen update if it detects Wifi status change
-            id(epaper75_01).update();
-  
   # Identifies whether Deep Sleep is On/Off
   - platform: homeassistant
     id: deep_sleep_activated
     entity_id: binary_sensor.guest_display_deep_sleep_flag
     internal: True
-    name: "Deep Sleep On/Off"
+    name: "Deep Sleep Status"
     on_state:
       then:
         - lambda: |-
             if(id(deep_sleep_activated).state) {
               ESP_LOGI("Binary Sensor", "Deep Sleep flag is ON.");
               id(epaper75_01).update();
+              id(last_display_refresh) = millis();
             } else {
               ESP_LOGI("Binary Sensor", "Deep Sleep flag is OFF.");
             }
@@ -558,6 +575,7 @@ binary_sensor:
             if(id(prevent_deep_sleep).state && id(deep_sleep_activated).state) {
               ESP_LOGI("Prevent Deep Sleep", "Prevent Deep Sleep is ON");
               id(epaper75_01).update();
+              id(last_display_refresh) = millis();
             } else if (id(prevent_deep_sleep).state) {
               ESP_LOGI("Prevent Deep Sleep", "Prevent Deep Sleep is ON");
             } else {
@@ -577,8 +595,11 @@ binary_sensor:
             } else {
               ESP_LOGI("Canvas Paddding", "Canvas Padding is Off");
             }
-            // Perform screen update
-            id(epaper75_01).update();
+            // Skip refresh during boot — settle_display handles it
+            if (id(boot_settled)) {
+              id(epaper75_01).update();
+              id(last_display_refresh) = millis();
+            }
 
   # Activates/Disables Screen Grid
   - platform: homeassistant
@@ -593,9 +614,12 @@ binary_sensor:
             } else {
               ESP_LOGI("Screen Grid", "Screen Grid is Off");
             }
-            // Perform screen update
-            id(epaper75_01).update();
-  
+            // Skip refresh during boot — settle_display handles it
+            if (id(boot_settled)) {
+              id(epaper75_01).update();
+              id(last_display_refresh) = millis();
+            }
+
   # Template Variables
   # Display Initialization
   #- platform: template
@@ -603,6 +627,25 @@ binary_sensor:
   #  internal: True
 
 script:
+  # Refresh #2 — clears the loading screen and shows the full dashboard.
+  # Waits 5 s after fetch_network_state completes so all HA sensor data has settled.
+  # If this refresh lands in minute X4/X9 (within 60 s of the next 5-min timer tick),
+  # that tick is suppressed to avoid an immediate back-to-back refresh.
+  - id: show_full_dashboard
+    mode: single
+    then:
+      - delay: 10s
+      - lambda: |-
+          id(show_loading_screen) = false;
+          auto t = id(esptime).now();
+          if (t.is_valid() && t.minute % 5 == 4) {
+            id(skip_next_timer) = true;
+            ESP_LOGI("boot", "Refresh #2 at minute %d -- skipping next 5-min timer", t.minute);
+          }
+          id(epaper75_01).update();
+          id(last_display_refresh) = millis();
+          id(boot_settled) = true;
+
   # Deep Sleep Implementation
   - id: consider_deep_sleep
     mode: queued
@@ -617,6 +660,164 @@ script:
             - deep_sleep.enter: deep_sleep_control
       - script.execute: consider_deep_sleep
 
+  # Fetches guest network state from UniFi on boot
+  # Populates guest_password and guest_network_enabled globals
+  # Mode single: if called while already running, second call is ignored
+  - id: fetch_network_state
+    mode: single
+    then:
+      - lambda: |-
+          ESP_LOGI("UniFi", "fetch_network_state started");
+      - http_request.get:
+          url: "https://${unifi_controller_url}/proxy/network/api/s/default/list/wlanconf"
+          request_headers:
+            X-API-KEY: "${unifi_api_key}"
+          on_response:
+            then:
+              - lambda: |-
+                  if (response->status_code != 200) {
+                    ESP_LOGE("UniFi", "GET list/wlanconf failed, status: %d", response->status_code);
+                    if (!id(boot_settled)) {
+                      id(show_full_dashboard).execute();
+                    }
+                    return;
+                  }
+                  // Read body from stream into string
+                  std::string body;
+                  body.reserve(4096);
+                  uint8_t buf[512];
+                  int len;
+                  while ((len = response->read(buf, sizeof(buf))) > 0) {
+                    body.append((char *) buf, len);
+                  }
+                  // Parse with ArduinoJSON v7
+                  JsonDocument doc;
+                  DeserializationError err = deserializeJson(doc, body);
+                  if (err) {
+                    ESP_LOGE("UniFi", "JSON parse failed: %s", err.c_str());
+                    return;
+                  }
+                  bool found = false;
+                  for (JsonObject wlan : doc["data"].as<JsonArray>()) {
+                    if (strcmp(wlan["_id"] | "", "${unifi_wlan_id}") == 0) {
+                      id(guest_password) = std::string(wlan["x_passphrase"] | "");
+                      id(guest_network_enabled) = wlan["enabled"] | false;
+                      found = true;
+                      ESP_LOGI("UniFi", "Matched WLAN: %s", (wlan["name"] | "?"));
+                      ESP_LOGI("UniFi", "Network state fetched — enabled: %s",
+                               id(guest_network_enabled) ? "true" : "false");
+                      ESP_LOGI("UniFi", "Password length: %d chars", id(guest_password).length());
+                      if (!id(boot_settled)) {
+                        id(show_full_dashboard).execute();
+                      } else {
+                        id(epaper75_01).update();
+                        id(last_display_refresh) = millis();
+                      }
+                      break;
+                    }
+                  }
+                  if (!found) {
+                    ESP_LOGE("UniFi", "WLAN ID not found in response — check unifi_wlan_id secret");
+                  }
+
+  # Generates a new 12-char guest password and pushes it to UniFi
+  # Password is staged in guest_password global before the PUT.
+  # On HTTP 200: stays committed. On failure: re-fetches from UniFi to restore consistent state.
+  - id: rotate_guest_password
+    mode: single
+    then:
+      - lambda: |-
+          esp_random(); // discard first call, let entropy pool settle
+          const char pool[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
+          const size_t pool_len = sizeof(pool) - 1;
+          std::string new_pass;
+          new_pass.reserve(12);
+          for (int i = 0; i < 12; i++) {
+            new_pass += pool[esp_random() % pool_len];
+          }
+          id(guest_password) = new_pass;
+          ESP_LOGI("UniFi", "Password candidate generated, attempting PUT...");
+      - http_request.send:
+          method: PUT
+          url: "https://${unifi_controller_url}/proxy/network/api/s/default/rest/wlanconf/${unifi_wlan_id}"
+          request_headers:
+            X-API-KEY: "${unifi_api_key}"
+            Content-Type: "application/json"
+          body: !lambda |-
+            return "{\"x_passphrase\":\"" + id(guest_password) + "\"}";
+          on_response:
+            then:
+              - lambda: |-
+                  if (response->status_code == 200) {
+                    ESP_LOGI("UniFi", "Password rotation confirmed");
+                    uint32_t now = millis();
+                    if (now - id(last_display_refresh) >= 60000) {
+                      id(epaper75_01).update();
+                      id(last_display_refresh) = now;
+                    } else {
+                      ESP_LOGI("UniFi", "Display update deferred — last refresh %u ms ago",
+                               now - id(last_display_refresh));
+                    }
+                  } else {
+                    ESP_LOGE("UniFi", "PUT failed (status %d) — re-fetching to restore state",
+                             response->status_code);
+                    id(fetch_network_state).execute();
+                  }
+
+switch:
+  - platform: template
+    id: guest_network
+    name: "Guest Network"
+    icon: "mdi:wifi"
+    lambda: |-
+      return id(guest_network_enabled);
+    turn_on_action:
+      - http_request.send:
+          method: PUT
+          url: "https://${unifi_controller_url}/proxy/network/api/s/default/rest/wlanconf/${unifi_wlan_id}"
+          request_headers:
+            X-API-KEY: "${unifi_api_key}"
+            Content-Type: "application/json"
+          body: '{"enabled": true}'
+          on_response:
+            then:
+              - lambda: |-
+                  if (response->status_code == 200) {
+                    id(guest_network_enabled) = true;
+                    id(epaper75_01).update();
+                    id(last_display_refresh) = millis();
+                    ESP_LOGI("UniFi", "Guest network enabled");
+                  } else {
+                    ESP_LOGE("UniFi", "Enable failed, status: %d", response->status_code);
+                  }
+    turn_off_action:
+      - http_request.send:
+          method: PUT
+          url: "https://${unifi_controller_url}/proxy/network/api/s/default/rest/wlanconf/${unifi_wlan_id}"
+          request_headers:
+            X-API-KEY: "${unifi_api_key}"
+            Content-Type: "application/json"
+          body: '{"enabled": false}'
+          on_response:
+            then:
+              - lambda: |-
+                  if (response->status_code == 200) {
+                    id(guest_network_enabled) = false;
+                    id(epaper75_01).update();
+                    id(last_display_refresh) = millis();
+                    ESP_LOGI("UniFi", "Guest network disabled");
+                  } else {
+                    ESP_LOGE("UniFi", "Disable failed, status: %d", response->status_code);
+                  }
+
+button:
+  - platform: template
+    id: rotate_guest_password_btn
+    name: "Rotate Guest Password"
+    icon: "mdi:key-refresh"
+    on_press:
+      - script.execute: rotate_guest_password
+
 text_sensor:
   # Set Up Screen Language Selection
   - platform: homeassistant
@@ -624,7 +825,7 @@ text_sensor:
     entity_id: input_select.guest_display_language
     internal: True
     name: "Screen Language Selection"
-    on_value: 
+    on_value:
       then:
         - lambda: |-
             ESP_LOGI("Screen Language", "Screen language set to %s.", id(screen_language).state.c_str());
@@ -644,11 +845,6 @@ text_sensor:
     entity_id: sensor.current_date_formatted
     internal: True
     name: "Current Date Formatted"
-    on_value: 
-      then:
-        - lambda: |-
-            // Perform screen update
-            id(epaper75_01).update();
   
   # Retrieve Formatted time
   - platform: homeassistant
@@ -754,48 +950,6 @@ text_sensor:
     internal: True
     name: "Sleep Mode Message"
   
-  # Retrieve parsed Wifi SSID string
-  - platform: homeassistant
-    id: wifi_qr_ssid
-    entity_id: sensor.wifi_decoded_ssid
-    internal: True
-    name: "Decoded WiFi SSID"
-    
-  # Retrieve parsed Wifi Password string 1
-  - platform: homeassistant
-    id: wifi_qr_pass_1
-    entity_id: sensor.wifi_decoded_pass_part1
-    internal: True
-    name: "Decoded WiFi Password Part 1"
-    
-  # Retrieve parsed Wifi Password string 2
-  - platform: homeassistant
-    id: wifi_qr_pass_2
-    entity_id: sensor.wifi_decoded_pass_part2
-    internal: True
-    name: "Decoded WiFi Password Part 2"
-
-  # Retrieve full QR Code String
-  - platform: homeassistant
-    id: wifi_qr_string
-    entity_id: image_processing.qr_string
-    name: "Decoded WiFi QR string"
-    on_value:
-      then:
-        - lambda: |-
-            // Creates internal QR code using decoded QR info
-            wifi_qr_internal->set_value(id(wifi_qr_string).state.c_str());
-            // Gets QR size before updating display
-            uint8_t qr_size = wifi_qr_internal->get_size();
-            id(qr_size_sensor) = qr_size;
-            //
-            ESP_LOGD("QR Code", "QR Code size: %u", qr_size);
-            ESP_LOGD("QR Code", "QR Code info: %s", id(wifi_qr_string).state.c_str());
-            //
-            if (id(qr_size_sensor) > 0) {
-              id(epaper75_01).update();
-            }
-
   # Internal QR code representation
 qr_code:
   - id: wifi_qr_internal
@@ -817,10 +971,17 @@ display:
     number: $gpio_busy_pin
     inverted: True
   reset_pin: $gpio_reset_pin
-  model: 7.50inv2alt
-  reset_duration: 2ms
+  model: 7.50inv2
+  reset_duration: 20ms
   update_interval: never
   lambda: |-
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////                    Loading Screen                         ////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    if (id(show_loading_screen)) {
+      return;
+    }
+    //
     ///////////////////////////////////////////////////////////////////////////////////////////
     //////////////// Auxiliary Coordinates & and multi-use variable definition ////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -896,39 +1057,33 @@ display:
     ////////////////                   QR Code + Credentials                   ////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
     ESP_LOGD("QR Code + Credentials", "QR Code + Credentials Printing Section Starts.");
-    // QR code Setup
+    // Build QR string and password display lines from globals
+    std::string qr_string = "WIFI:T:WPA;S:${guest_ssid};P:" + id(guest_password) + ";;";
+    wifi_qr_internal->set_value(qr_string.c_str());
+    id(qr_size_sensor) = wifi_qr_internal->get_size();
+    std::string pass = id(guest_password);
+    std::string pass_line1 = pass.substr(0, 3) + " " + pass.substr(3, 3);
+    std::string pass_line2 = pass.length() >= 12 ? pass.substr(6, 3) + " " + pass.substr(9, 3) : pass.substr(6);
+    //
+    // QR code setup
     int qr_width = id(qr_size_sensor)*canvas.qr.scale_factor;
     int qr_height = id(qr_size_sensor)*canvas.qr.scale_factor;
     ESP_LOGD("QR Code + Credentials", "QR Height: %d, Width: %d.", qr_height, qr_width);
     //
-    // Calculate QR location Coordinates at upper left
+    // Calculate QR location coordinates at upper left
     int x_qr = canvas.qr.x + (canvas.qr.width - qr_width)/2;
     int y_qr = canvas.qr.y + (canvas.qr.height - qr_height)/2;
     //
-    // Credentials setup
-    // Calculate string sizes for password lines
-    // Unifi's Integration imposes a 20 char long random password with upper and lower-case letters
-    // numbers, and symbols... I guess user experience wasn't relevant?...
-    // For readibility purposes, passwords were separated in four groups of five chars each
-    //
-    // Compare first and second password lines
-    // First line
-    id(epaper75_01).get_text_bounds(0, 0, id(wifi_qr_pass_1).state.c_str(), id(roboto_pass),
+    // Measure password line widths and SSID width for credential block positioning
+    id(epaper75_01).get_text_bounds(0, 0, pass_line1.c_str(), id(roboto_pass),
                                     TextAlign::LEFT, &x1, &y1, &string_width1, &string_height1);
-    // Print String and log the dimensions
-    ESP_LOGD("Text size", "String: %s, Width: %d pixels, Height: %d pixels", id(wifi_qr_pass_1).state.c_str(), 
-            string_width1, string_height1);
-    //
-    //Second Line
-    id(epaper75_01).get_text_bounds(0, 0, id(wifi_qr_pass_2).state.c_str(), id(roboto_pass),
+    id(epaper75_01).get_text_bounds(0, 0, pass_line2.c_str(), id(roboto_pass),
                                     TextAlign::LEFT, &x1, &y1, &string_width2, &string_height2);
-    // Print String and log the dimensions
-    ESP_LOGD("Text size", "String: %s, Width: %d pixels, Height: %d pixels", id(wifi_qr_pass_2).state.c_str(),
-            string_width2, string_height2);
-    //
-    // Compare lenghts and keep the longest 
+    id(epaper75_01).get_text_bounds(0, 0, "${guest_ssid}", id(roboto_ssid),
+                                    TextAlign::LEFT, &x1, &y1, &string_width, &string_height);
+    // Widest of SSID and both password lines drives block centering
     string_width1 = string_width1 > string_width2 ? string_width1 : string_width2;
-    ESP_LOGD("Text size", "Longer string, Width: %d pixels", string_width1);
+    string_width1 = string_width1 > string_width ? string_width1 : string_width;
     //
     // Calculate SSID/Pass coordinates at upper left
     int x_ssid_pass = canvas.credentials.x + (canvas.credentials.width - string_width1 - canvas.qr.icon_width
@@ -936,32 +1091,24 @@ display:
     int y_ssid_pass = canvas.credentials.y + (canvas.credentials.height - 3*canvas.qr.icon_height)/2;
     //
     // Print QR code and credentials if guest wifi is on, otherwise print wifi off icon
-    if (qr_width > 0 && qr_height > 0) {
-      if (id(wifi_status).state) {
-        if ((x_qr >= canvas.qr.x && x_qr <= canvas.qr.x + canvas.cell.width) &&
-            (y_qr >= canvas.qr.y && y_qr <= canvas.qr.y + canvas.cell.height)) {
-          it.qr_code(x_qr, y_qr, id(wifi_qr_internal), Color(255,255,255), canvas.qr.scale_factor);
-          it.image(x_ssid_pass, y_ssid_pass, id(icon_wifi_on));
-          it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + canvas.qr.icon_height/2,
-                  id(roboto_ssid), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_ssid).state.c_str());
-          it.image(x_ssid_pass, y_ssid_pass + canvas.qr.icon_height, id(icon_pass));
-          it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + 3*canvas.qr.icon_height/2,
-                  id(roboto_pass), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_pass_1).state.c_str());
-          it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + 5*canvas.qr.icon_height/2,
-                  id(roboto_pass), TextAlign::CENTER_LEFT, "%s", id(wifi_qr_pass_2).state.c_str());
-          //
-          // Log print and dimension
-          ESP_LOGI("Image Location", "QR code printed at x: %d pixels, y: %d pixels", x_qr, y_qr);
-          ESP_LOGI("Image Location", "Wifi On icon printed at x: %d pixels, y: %d pixels", x_ssid_pass, y_ssid_pass);
-          ESP_LOGI("Image Location", "Pass icon printed at x: %d pixels, y: %d pixels", x_ssid_pass,
-                  y_ssid_pass + canvas.qr.icon_height);
-        }
-      } else {
-        it.image(canvas.qr.x_wifi_off, canvas.qr.y_wifi_off, id(icon_wifi_off), ImageAlign::CENTER);
-        // Log print
-        ESP_LOGD("Image Location", "Wifi off printed at x: %d pixels, y: %d pixels", canvas.qr.x_wifi_off,
-                canvas.qr.y_wifi_off);
+    if (id(guest_network_enabled) && !pass.empty()) {
+      if ((x_qr >= canvas.qr.x && x_qr <= canvas.qr.x + canvas.cell.width) &&
+          (y_qr >= canvas.qr.y && y_qr <= canvas.qr.y + canvas.cell.height)) {
+        it.qr_code(x_qr, y_qr, id(wifi_qr_internal), Color(255,255,255), canvas.qr.scale_factor);
+        it.image(x_ssid_pass, y_ssid_pass, id(icon_wifi_on));
+        it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + canvas.qr.icon_height/2,
+                id(roboto_ssid), TextAlign::CENTER_LEFT, "${guest_ssid}");
+        it.image(x_ssid_pass, y_ssid_pass + canvas.qr.icon_height, id(icon_pass));
+        it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + 3*canvas.qr.icon_height/2,
+                id(roboto_pass), TextAlign::CENTER_LEFT, "%s", pass_line1.c_str());
+        it.printf(x_ssid_pass + canvas.qr.icon_width + canvas.padding, y_ssid_pass + 5*canvas.qr.icon_height/2,
+                id(roboto_pass), TextAlign::CENTER_LEFT, "%s", pass_line2.c_str());
+        ESP_LOGI("Image Location", "QR code printed at x: %d pixels, y: %d pixels", x_qr, y_qr);
       }
+    } else {
+      it.image(canvas.qr.x_wifi_off, canvas.qr.y_wifi_off, id(icon_wifi_off), ImageAlign::CENTER);
+      ESP_LOGD("Image Location", "Wifi off printed at x: %d pixels, y: %d pixels", canvas.qr.x_wifi_off,
+              canvas.qr.y_wifi_off);
     }
     //
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1100,144 +1247,77 @@ display:
     x0 = canvas.cell.width/3;
     y0 = canvas.cell.height;
     //
-    // Capture condition image id
     for (int i = 0; i < 3; i++) {
-      if (canvas.forecast_info.condition_h[i] == "clear-night") {        
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_night), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "cloudy") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_cloudy), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "fog") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_fog), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "hail") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_hail), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "lightning") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_lightning), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "lightning-rainy") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_lightning_rainy), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "partlycloudy") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_partly_cloudy), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "pouring") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_pouring), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "rainy") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_rainy), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "snowy") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_snowy), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "snowy-rainy") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_snowy_rainy), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "sunny") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_sunny), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "windy") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_windy), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "windy-variant") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_windy_variant), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      } else if (canvas.forecast_info.condition_h[i] == "exceptional") {
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 - (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
-        it.image(canvas.forecast_weather.x + x0*i + x0/2, canvas.forecast_weather.y + y0,
-                id(icon_weather_exceptional), ImageAlign::CENTER);
-        it.printf(canvas.forecast_weather.x + x0*i + x0/2,
-                canvas.forecast_weather.y + y0 + (canvas.padding + id(icon_weather_cloudy).get_height()/2),
-                id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
-      }
+      std::string &cond = canvas.forecast_info.condition_h[i];
+      int cx = canvas.forecast_weather.x + x0*i + x0/2;
+      int cy = canvas.forecast_weather.y + y0;
+      int icon_half = 25; // all weather icons are 50x50
+      //
+      it.printf(cx, cy - (canvas.padding + icon_half),
+              id(roboto_f_time), TextAlign::BOTTOM_CENTER, "%s", canvas.forecast_info.time_h[i].c_str());
+      it.printf(cx, cy + (canvas.padding + icon_half),
+              id(roboto_f_temp), TextAlign::TOP_CENTER, "%.0f°", canvas.forecast_info.temp_h[i]);
+      //
+      if      (cond == "clearsky_day" || cond == "clearsky_polartwilight")
+        it.image(cx, cy, id(icon_wx_sunny), ImageAlign::CENTER);
+      else if (cond == "clearsky_night")
+        it.image(cx, cy, id(icon_wx_night), ImageAlign::CENTER);
+      else if (cond == "fair_day" || cond == "fair_polartwilight" ||
+               cond == "partlycloudy_day" || cond == "partlycloudy_polartwilight")
+        it.image(cx, cy, id(icon_wx_partly_cloudy), ImageAlign::CENTER);
+      else if (cond == "fair_night" || cond == "partlycloudy_night")
+        it.image(cx, cy, id(icon_wx_night_partly_cloudy), ImageAlign::CENTER);
+      else if (cond == "cloudy")
+        it.image(cx, cy, id(icon_wx_cloudy), ImageAlign::CENTER);
+      else if (cond == "fog")
+        it.image(cx, cy, id(icon_wx_fog), ImageAlign::CENTER);
+      else if (cond == "lightrain" || cond == "lightrainshowers_day" ||
+               cond == "lightrainshowers_night" || cond == "lightrainshowers_polartwilight")
+        it.image(cx, cy, id(icon_wx_partly_rainy), ImageAlign::CENTER);
+      else if (cond == "rain" || cond == "rainshowers_day" ||
+               cond == "rainshowers_night" || cond == "rainshowers_polartwilight")
+        it.image(cx, cy, id(icon_wx_rainy), ImageAlign::CENTER);
+      else if (cond == "heavyrain" || cond == "heavyrainshowers_day" ||
+               cond == "heavyrainshowers_night" || cond == "heavyrainshowers_polartwilight")
+        it.image(cx, cy, id(icon_wx_pouring), ImageAlign::CENTER);
+      else if (cond == "lightrainandthunder" || cond == "lightrainshowersandthunder_day" ||
+               cond == "lightrainshowersandthunder_night" || cond == "lightrainshowersandthunder_polartwilight" ||
+               cond == "lightsleetandthunder" || cond == "lightssleetshowersandthunder_day" ||
+               cond == "lightssleetshowersandthunder_night" || cond == "lightssleetshowersandthunder_polartwilight" ||
+               cond == "lightsnowandthunder" || cond == "lightssnowshowersandthunder_day" ||
+               cond == "lightssnowshowersandthunder_night" || cond == "lightssnowshowersandthunder_polartwilight")
+        it.image(cx, cy, id(icon_wx_partly_lightning), ImageAlign::CENTER);
+      else if (cond == "rainandthunder" || cond == "rainshowersandthunder_day" ||
+               cond == "rainshowersandthunder_night" || cond == "rainshowersandthunder_polartwilight" ||
+               cond == "heavyrainandthunder" || cond == "heavyrainshowersandthunder_day" ||
+               cond == "heavyrainshowersandthunder_night" || cond == "heavyrainshowersandthunder_polartwilight" ||
+               cond == "sleetandthunder" || cond == "sleetshowersandthunder_day" ||
+               cond == "sleetshowersandthunder_night" || cond == "sleetshowersandthunder_polartwilight" ||
+               cond == "heavysleetandthunder" || cond == "heavysleetshowersandthunder_day" ||
+               cond == "heavysleetshowersandthunder_night" || cond == "heavysleetshowersandthunder_polartwilight" ||
+               cond == "snowandthunder" || cond == "snowshowersandthunder_day" ||
+               cond == "snowshowersandthunder_night" || cond == "snowshowersandthunder_polartwilight" ||
+               cond == "heavysnowandthunder" || cond == "heavysnowshowersandthunder_day" ||
+               cond == "heavysnowshowersandthunder_night" || cond == "heavysnowshowersandthunder_polartwilight")
+        it.image(cx, cy, id(icon_wx_lightning_rainy), ImageAlign::CENTER);
+      else if (cond == "lightsleet" || cond == "lightsleetshowers_day" ||
+               cond == "lightsleetshowers_night" || cond == "lightsleetshowers_polartwilight")
+        it.image(cx, cy, id(icon_wx_partly_snowy_rainy), ImageAlign::CENTER);
+      else if (cond == "sleet" || cond == "sleetshowers_day" ||
+               cond == "sleetshowers_night" || cond == "sleetshowers_polartwilight" ||
+               cond == "heavysleet" || cond == "heavysleetshowers_day" ||
+               cond == "heavysleetshowers_night" || cond == "heavysleetshowers_polartwilight")
+        it.image(cx, cy, id(icon_wx_snowy_rainy), ImageAlign::CENTER);
+      else if (cond == "lightsnow" || cond == "lightsnowshowers_day" ||
+               cond == "lightsnowshowers_night" || cond == "lightsnowshowers_polartwilight")
+        it.image(cx, cy, id(icon_wx_partly_snowy), ImageAlign::CENTER);
+      else if (cond == "snow" || cond == "snowshowers_day" ||
+               cond == "snowshowers_night" || cond == "snowshowers_polartwilight")
+        it.image(cx, cy, id(icon_wx_snowflake), ImageAlign::CENTER);
+      else if (cond == "heavysnow" || cond == "heavysnowshowers_day" ||
+               cond == "heavysnowshowers_night" || cond == "heavysnowshowers_polartwilight")
+        it.image(cx, cy, id(icon_wx_heavy_snow), ImageAlign::CENTER);
+      //
       ESP_LOGD("Weather Forecast", "time_%dh: %s.", i+1, canvas.forecast_info.time_h[i].c_str());
       ESP_LOGD("Weather Forecast", "temp_%dh: %.0f°", i+1, canvas.forecast_info.temp_h[i]);
       ESP_LOGD("Weather Forecast", "Condition_%dh: %s.", i+1, canvas.forecast_info.condition_h[i].c_str());
