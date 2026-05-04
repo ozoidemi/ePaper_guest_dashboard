@@ -1,0 +1,74 @@
+# =============================================================================
+# ePaper Guest Dashboard — HA Template Sensors
+# =============================================================================
+# Weather data (temperature, humidity, UV, forecast conditions and times) is
+# sourced directly from met.no via the rest: block in configuration.yaml.
+# This file handles time, date, language formatting, sunset, and sleep message.
+# =============================================================================
+
+- sensor:
+    - name: "current_time_formatted"
+      state: >-
+        {% set dt = now() %}
+        {{ dt.strftime('%-I:%M %p').strip() }}
+
+    - name: "current_weekday"
+      state: >-
+        {% set weekday = now().weekday() %}
+        {% set language = states('input_select.guest_display_language') %}
+        {% set days = {
+          'Castellano': ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+          'Français': ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'],
+          'Italiano': ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'],
+          'Deutsch': ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'],
+        } %}
+        {% set default_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+        {{ days[language][weekday] if language in days else default_days[weekday] }}
+
+    - name: "current_date_formatted"
+      state: >-
+        {% set dt = now() %}
+        {% set language = states('input_select.guest_display_language') %}
+        {% set day = dt.day %}
+        {% set month = dt.month %}
+        {% set year = dt.year %}
+
+        {% set months = {
+          'Castellano': ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+          'Français': ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+          'Italiano': ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'],
+          'Deutsch': ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+        } %}
+
+        {% set formats = {
+          'Castellano': day ~ ' de ' ~ months['Castellano'][month-1] ~ ', ' ~ year,
+          'Français': day ~ ' ' ~ months['Français'][month-1] ~ ' ' ~ year,
+          'Italiano': day ~ ' ' ~ months['Italiano'][month-1] ~ ' ' ~ year,
+          'Deutsch': day ~ '. ' ~ months['Deutsch'][month-1] ~ ' ' ~ year
+        } %}
+
+        {% set default_months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+        {% set suffix = 'th' if 11 <= day <= 13 else {1:'st', 2:'nd', 3:'rd'}.get(day % 10, 'th') %}
+
+        {{ formats[language] if language in formats else default_months[month-1] ~ ' ' ~ day ~ suffix ~ ', ' ~ year }}
+
+    - name: "sleep_mode_message"
+      state: >-
+        {% set language = states('input_select.guest_display_language') %}
+        {% set messages = {
+          'Castellano': 'Modo Bajo Consumo Activado',
+          'Français': 'Mode Sommeil Activé',
+          'Italiano': 'Modalità Riposo Attivata',
+          'Deutsch': 'Schlafmodus Aktiviert'
+        } %}
+        {{ messages[language] if language in messages else 'Sleep Mode Activated' }}
+
+    - name: "sunset_time"
+      state: >-
+        {% set sunset_time = state_attr('sun.sun', 'next_setting') %}
+        {% if sunset_time is not none %}
+          {% set dt = as_datetime(sunset_time) | as_local %}
+          {{ dt.strftime('%-I:%M %p').strip() }}
+        {% else %}
+          unavailable
+        {% endif %}
