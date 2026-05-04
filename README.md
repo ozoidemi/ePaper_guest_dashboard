@@ -166,7 +166,7 @@ People who:
 - Have a properly isolated guest network
 - Are comfortable editing YAML files
 
-If you need a one-click install, this will frustrate you. If you're willing to follow a step-by-step guide, you'll have it running in an afternoon.
+If you need a one-click install, this will frustrate you. If you're willing to follow a step-by-step guide, you'll have it running in an afternoon or less.
 
 ### A Note on the Security Posture
 
