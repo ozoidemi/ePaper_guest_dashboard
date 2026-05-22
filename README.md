@@ -20,7 +20,11 @@ This is a baseline requirement, not a suggestion. Guests on a flat network can r
 
 3. **Physical access = credential access.**
 
-Anyone who can see the screen can read the password.
+Anyone who can see the QR code can read the password. Sounds obvious, but a lot of people don't get this.
+
+The argument that codifying credentials into a QR code is enough to protect them is ridiculous. There is a reason we stopped using WEP authentication and moved into WPA2/WPA3 - WEP is so easy to break that it is equivalent to plain text. Exactly the same reason why credentials in a QR code are the same as credentials in plain text.
+
+Treat the QR code as a Post-It note.
 
 
 If you're comfortable with those three points and have a properly isolated guest network, read on.
