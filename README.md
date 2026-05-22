@@ -153,7 +153,7 @@ An ESP32 e-paper display that shows your guest Wi-Fi credentials and live weathe
 **The ESP handles:**
 - Talking directly to UniFi at boot to read the current password and network state
 - Generating new passwords and pushing them to UniFi on rotation
-- QR code generation and display rendering without ever interacting with the UniFi integration
+- QR code generation and display rendering without ever interacting with Home Assistant's UniFi integration
 
 **HA never touches the guest password** (UniFi variant). It only presses a button to tell the ESP to rotate — the ESP does everything else. In the no-UniFi variant, HA holds the credentials and the ESP reads them from HA.
 
